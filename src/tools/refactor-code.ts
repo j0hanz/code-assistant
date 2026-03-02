@@ -17,17 +17,15 @@ import type {
   RefactorCodeResult,
 } from '../schemas/outputs.js';
 
-const SYSTEM_INSTRUCTION = `
-<role>
-Code Refactoring Analyst.
-</role>
+const DEFAULT_MAX_SUGGESTIONS = 10;
+
+function buildSystemInstruction(maxSuggestions: number): string {
+  return `<role>Code Refactoring Analyst.</role>
 
 <task>
-Analyze one source file and return refactoring suggestions in exactly four categories:
-1. naming
-2. complexity
-3. duplication
-4. grouping
+Analyze one source file. Return up to ${String(maxSuggestions)} refactoring suggestions, highest priority first.
+Categories (priority order): complexity, duplication, naming, grouping.
+Focus: complexity and duplication. Only report naming/grouping if high-impact.
 </task>
 
 <constraints>
@@ -35,16 +33,15 @@ Analyze one source file and return refactoring suggestions in exactly four categ
 - Do not suggest creating files or moving code across files.
 - Every suggestion must reference a concrete target (name or location) from this file.
 - Prefer high-impact structural improvements over minor style edits.
-- Grouping: only report when related items are split by 50+ lines of unrelated code, or when one logical group is clearly fragmented.
-- If no valid issues exist, return an empty suggestions array and a brief summary.
+- Grouping: only report when related items are split by 50+ lines of unrelated code.
+- If no valid issues exist, return empty suggestions array and a 1-sentence summary.
+- Keep summary to 1-3 sentences. Keep currentIssue and suggestion to 1-2 sentences each.
 </constraints>
 
 <output>
-- Return strict JSON only.
-- Do not add markdown, prose outside JSON, or extra keys.
-- Suggestions must stay within the four allowed categories.
-</output>
-`;
+- Return strict JSON only. No markdown, no prose outside JSON, no extra keys.
+</output>`;
+}
 
 const TOOL_CONTRACT = requireToolContract('refactor_code');
 
@@ -64,7 +61,7 @@ export function registerRefactorCodeTool(server: McpServer): void {
     name: 'refactor_code',
     title: 'Refactor Code',
     description:
-      'Analyze cached file for naming, complexity, duplication, and grouping improvements. Prerequisite: load_file. Auto-infer language.',
+      'Analyze cached file for complexity, duplication, naming, and grouping improvements. Prerequisite: load_file. Set maxSuggestions to cap output (default 10).',
     inputSchema: RefactorCodeInputSchema,
     fullInputSchema: RefactorCodeInputSchema,
     resultSchema: RefactorCodeResultSchema,
@@ -97,10 +94,11 @@ export function registerRefactorCodeTool(server: McpServer): void {
     buildPrompt: (input, ctx) => {
       const file = getFileContextSnapshot(ctx);
       const language = input.language ?? file.language;
+      const maxSuggestions = input.maxSuggestions ?? DEFAULT_MAX_SUGGESTIONS;
 
       return {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        prompt: `Language: ${language}\nFile: ${file.filePath}\n\nSource code:\n${file.content}\n\nAnalyze this file and provide refactoring suggestions across all four categories (naming, complexity, duplication, grouping).`,
+        systemInstruction: buildSystemInstruction(maxSuggestions),
+        prompt: `Language: ${language}\nFile: ${file.filePath}\n\n${file.content}`,
       };
     },
     transformResult: (_input, result, ctx) => {

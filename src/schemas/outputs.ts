@@ -233,11 +233,15 @@ export const RefactorSuggestionSchema = z.strictObject({
   category: z.enum(REFACTOR_CATEGORIES).describe('Refactoring category.'),
   target: createBoundedString(
     1,
-    300,
+    200,
     'Function/variable/block name or location.'
   ),
-  currentIssue: createBoundedString(1, 500, 'What is wrong.'),
-  suggestion: createBoundedString(1, 1000, 'Concrete refactoring suggestion.'),
+  currentIssue: createBoundedString(1, 200, 'What is wrong (1-2 sentences).'),
+  suggestion: createBoundedString(
+    1,
+    500,
+    'Concrete refactoring suggestion (1-2 sentences).'
+  ),
   priority: z.enum(REFACTOR_PRIORITIES).describe('Suggestion priority.'),
 });
 
@@ -245,13 +249,13 @@ export const RefactorCodeGeminiResultSchema = z.strictObject({
   summary: z
     .string()
     .min(1)
-    .max(2000)
-    .describe('Refactoring analysis summary.'),
+    .max(500)
+    .describe('Refactoring analysis summary (1-3 sentences).'),
   suggestions: z
     .array(RefactorSuggestionSchema)
     .min(0)
-    .max(50)
-    .describe('Refactoring suggestions.'),
+    .max(15)
+    .describe('Refactoring suggestions, highest priority first.'),
 });
 
 export const RefactorCodeResultSchema = RefactorCodeGeminiResultSchema.extend({

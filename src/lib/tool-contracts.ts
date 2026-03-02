@@ -6,6 +6,8 @@ import {
   FLASH_MODEL,
   FLASH_THINKING_LEVEL,
   FLASH_TRIAGE_THINKING_LEVEL,
+  HEAVY_MAX_OUTPUT_TOKENS,
+  LIGHT_MAX_OUTPUT_TOKENS,
   TRIAGE_TEMPERATURE,
 } from './config.js';
 
@@ -156,6 +158,14 @@ const MAX_TEST_CASES_PARAM = createParam(
   'Post-generation cap applied to test cases.'
 );
 
+const MAX_SUGGESTIONS_PARAM = createParam(
+  'maxSuggestions',
+  'number',
+  false,
+  '1-15',
+  'Max refactoring suggestions to return. Default: 10.'
+);
+
 const FILE_PATH_PARAM = createParam(
   'filePath',
   'string',
@@ -263,7 +273,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
     temperature: CREATIVE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(
@@ -286,7 +296,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: LIGHT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),
@@ -337,19 +347,20 @@ export const TOOL_CONTRACTS = [
   {
     name: 'refactor_code',
     purpose:
-      'Analyze cached file for naming, complexity, duplication, and grouping improvements.',
+      'Analyze cached file for complexity, duplication, naming, and grouping improvements. Focuses on high-impact structural issues.',
     model: FLASH_MODEL,
-    timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
-    thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
+    thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
+    maxOutputTokens: LIGHT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
-    params: cloneParams(LANGUAGE_PARAM),
+    params: cloneParams(LANGUAGE_PARAM, MAX_SUGGESTIONS_PARAM),
     outputShape:
       '{filePath, language, summary, suggestions[{category, target, currentIssue, suggestion, priority}], *IssuesCount}',
     gotchas: [
       'Requires load_file first.',
       'Analyzes one file — does not suggest cross-file moves.',
+      'maxSuggestions caps output (default 10, max 15).',
     ],
     crossToolFlow: [
       'Use after load_file. Provides refactoring roadmap for the cached file.',
@@ -382,7 +393,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: false,
     params: cloneParams(QUESTION_PARAM, LANGUAGE_PARAM),
@@ -402,7 +413,7 @@ export const TOOL_CONTRACTS = [
       'Google Search with Grounding. Set topic to scope results; responseStyle controls output length.',
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
-    maxOutputTokens: 0,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     params: cloneParams(QUERY_PARAM, TOPIC_PARAM, RESPONSE_STYLE_PARAM),
     outputShape: '{ok, result: {text, groundingMetadata}}',
     gotchas: [
@@ -421,7 +432,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),
@@ -442,7 +453,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),

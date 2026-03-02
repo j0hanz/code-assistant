@@ -78,11 +78,14 @@ export const FLASH_THINKING_LEVEL = THINKING_LEVELS.flash;
 /** Thinking level for Flash deep analysis. */
 export const FLASH_HIGH_THINKING_LEVEL = THINKING_LEVELS.flashHigh;
 
-// Output token caps for various tools. Set to a high default to avoid cutting off important information, but can be adjusted as needed.
-const DEFAULT_OUTPUT_CAP = 65_536;
+/// Maximum suggestions to return for code refactoring (configurable via input). Default is 10 to balance thoroughness with cost and noise.
+export const LIGHT_MAX_OUTPUT_TOKENS = 8_192;
 
-/** Shared output token cap used by all tool categories. */
-export const DEFAULT_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
+// Higher token limit for deep analysis tasks that return large arrays or unbounded fields (e.g. test plans, documentation, code smells, verify logic).
+export const DEFAULT_MAX_OUTPUT_TOKENS = 16_384;
+
+// Extended token limit for tools that may return large outputs, with expectation of higher cost. Should be used judiciously and monitored for cost and performance impacts.
+export const HEAVY_MAX_OUTPUT_TOKENS = 32_768;
 
 // ---------------------------------------------------------------------------
 // Temperatures

@@ -13,14 +13,14 @@ import {
 import { WebSearchResultSchema } from '../schemas/outputs.js';
 import type { WebSearchResult } from '../schemas/outputs.js';
 
-interface GroundingChunk {
+export interface GroundingChunk {
   web?: {
     uri?: string;
     title?: string;
   };
 }
 
-interface GroundingSupport {
+export interface GroundingSupport {
   segment?: {
     text?: string;
     startIndex?: number;
@@ -29,14 +29,14 @@ interface GroundingSupport {
   groundingChunkIndices?: number[];
 }
 
-interface GroundingMetadata {
+export interface GroundingMetadata {
   webSearchQueries?: string[];
   groundingChunks?: GroundingChunk[];
   groundingSupports?: GroundingSupport[];
   searchEntryPoint?: unknown;
 }
 
-function formatGroundedResponse(
+export function formatGroundedResponse(
   text: string,
   metadata: GroundingMetadata | undefined
 ): string {
