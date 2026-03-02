@@ -583,7 +583,7 @@ export class ToolExecutionRunner<
       await this.reporter.updateStatus(validationMessage);
       await this.reporter.reportCompletion('rejected');
       await this.reporter.storeResultSafely(
-        'completed',
+        'failed',
         validationError,
         this.onLog
       );
