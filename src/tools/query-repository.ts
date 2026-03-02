@@ -1,17 +1,22 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import { getErrorMessage } from '../lib/errors.js';
-import { getClient } from '../lib/gemini/client.js';
-import { getDefaultModel } from '../lib/gemini/config.js';
-import { getCurrentSearchStore } from '../lib/gemini/index.js';
 import {
+  generateWithFileSearch,
+  getCurrentSearchStore,
+} from '../lib/gemini/index.js';
+import {
+  buildStructuredToolExecutionOptions,
   createErrorToolResponse,
-  createToolResponse,
-  wrapToolHandler,
+  registerStructuredToolTask,
+  requireToolContract,
 } from '../lib/tools.js';
 import { QueryRepositoryInputSchema } from '../schemas/inputs.js';
-import { DefaultOutputSchema } from '../schemas/outputs.js';
-import type { QueryRepositorySource } from '../schemas/outputs.js';
+import type { QueryRepositoryInput } from '../schemas/inputs.js';
+import { QueryRepositoryResultSchema } from '../schemas/outputs.js';
+import type {
+  QueryRepositoryResult,
+  QueryRepositorySource,
+} from '../schemas/outputs.js';
 
 // ---------------------------------------------------------------------------
 // Types for file search responses
@@ -80,87 +85,72 @@ const VALIDATION_META = { retryable: false, kind: 'validation' as const };
 
 const SYSTEM_INSTRUCTION = `You are a code analysis assistant. Answer questions about the repository using the retrieved source file contents. Be precise, cite file names when possible, and stay factual.`;
 
+const TOOL_CONTRACT = requireToolContract('query_repository');
+
 // ---------------------------------------------------------------------------
 // Tool registration
 // ---------------------------------------------------------------------------
 
 export function registerQueryRepositoryTool(server: McpServer): void {
-  server.registerTool(
-    'query_repository',
+  registerStructuredToolTask<QueryRepositoryInput, QueryRepositoryResult>(
+    server,
     {
+      name: 'query_repository',
       title: 'Query Repository',
       description:
         'Ask a natural-language question about the indexed repository. Prerequisite: index_repository. Uses Gemini File Search for RAG.',
       inputSchema: QueryRepositoryInputSchema,
-      outputSchema: DefaultOutputSchema,
+      fullInputSchema: QueryRepositoryInputSchema,
+      resultSchema: QueryRepositoryResultSchema,
+      errorCode: 'E_QUERY_REPO',
+      ...buildStructuredToolExecutionOptions(TOOL_CONTRACT),
       annotations: {
         readOnlyHint: true,
         idempotentHint: true,
         openWorldHint: true,
         destructiveHint: false,
       },
-    },
-    wrapToolHandler(
-      {
-        toolName: 'query_repository',
-        progressContext: (input) => input.query.slice(0, 60),
-      },
-      async (input) => {
-        const parsed = QueryRepositoryInputSchema.parse(input);
-
+      progressContext: (input) => input.query.slice(0, 60),
+      formatOutput: (result) => result.answer,
+      validateInput: () => {
         const store = getCurrentSearchStore();
         if (!store) {
-          return createErrorToolResponse(
-            'E_QUERY_REPO',
-            'No repository indexed. Call index_repository first.',
-            undefined,
-            VALIDATION_META
+          return Promise.resolve(
+            createErrorToolResponse(
+              'E_QUERY_REPO',
+              'No repository indexed. Call index_repository first.',
+              undefined,
+              VALIDATION_META
+            )
           );
         }
-
-        try {
-          const model = getDefaultModel();
-          const response = await getClient().models.generateContent({
-            model,
-            contents: parsed.query,
-            config: {
-              systemInstruction: SYSTEM_INSTRUCTION,
-              tools: [
-                {
-                  fileSearch: {
-                    fileSearchStoreNames: [store.storeName],
-                  },
-                },
-              ],
-            },
-          });
-
-          const parts = (response.candidates?.[0]?.content?.parts ??
-            []) as unknown[];
-          const textFromParts = extractTextFromParts(parts);
-          const answer =
-            textFromParts || (response.text ?? 'No answer generated.');
-          const sources = extractSources(parts);
-
-          return createToolResponse(
-            {
-              ok: true as const,
-              result: {
-                answer,
-                sources,
-              },
-            },
-            answer
-          );
-        } catch (error) {
-          return createErrorToolResponse(
-            'E_QUERY_REPO',
-            getErrorMessage(error),
-            undefined,
-            { retryable: true, kind: 'upstream' }
-          );
+        return Promise.resolve(undefined);
+      },
+      buildPrompt: (input) => ({
+        systemInstruction: SYSTEM_INSTRUCTION,
+        prompt: input.query,
+      }),
+      customGenerate: async (promptParts, _ctx, opts) => {
+        const store = getCurrentSearchStore();
+        if (!store) {
+          throw new Error('No repository indexed');
         }
-      }
-    )
+
+        const response = await generateWithFileSearch({
+          systemInstruction: promptParts.systemInstruction,
+          prompt: promptParts.prompt,
+          responseSchema: {},
+          fileSearchStoreNames: [store.storeName],
+          ...(opts.signal ? { signal: opts.signal } : {}),
+          onLog: opts.onLog,
+        });
+
+        const textFromParts = extractTextFromParts(response.parts);
+        const answer = textFromParts || response.text || 'No answer generated.';
+        const sources = extractSources(response.parts);
+
+        return { answer, sources };
+      },
+    }
   );
 }

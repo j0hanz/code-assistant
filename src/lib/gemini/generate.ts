@@ -5,6 +5,7 @@ import { FinishReason, type GoogleGenAI } from '@google/genai';
 import type { GenerateContentConfig } from '@google/genai';
 
 import { ConcurrencyLimiter } from '../concurrency.js';
+import { DEFAULT_MAX_OUTPUT_TOKENS } from '../config.js';
 import { getErrorMessage, toRecord } from '../errors.js';
 import { formatUsNumber } from '../format.js';
 import {
@@ -19,7 +20,6 @@ import {
   batchTimeoutMsConfig,
   CANCELLED_REQUEST_MESSAGE,
   concurrencyWaitMsConfig,
-  DEFAULT_MAX_OUTPUT_TOKENS,
   DEFAULT_MAX_RETRIES,
   DEFAULT_MODEL,
   DEFAULT_TIMEOUT_MS,
@@ -53,7 +53,6 @@ import type {
 
 const SLEEP_UNREF_OPTIONS = { ref: false } as const;
 const JSON_CODE_BLOCK_PATTERN = /```(?:json)?\n?([\s\S]*?)(?=\n?```)/u;
-const NEVER_ABORT_SIGNAL = new AbortController().signal;
 
 // ---------------------------------------------------------------------------
 // Concurrency limiters
@@ -106,7 +105,7 @@ function getPromptWithFunctionCallingContext(
 
 function buildGenerationConfig(
   request: GeminiStructuredRequest,
-  abortSignal: AbortSignal
+  abortSignal?: AbortSignal
 ): GenerateContentConfig {
   const includeThoughts =
     request.includeThoughts ?? getDefaultIncludeThoughts();
@@ -118,7 +117,7 @@ function buildGenerationConfig(
     temperature: request.temperature ?? 1.0,
     maxOutputTokens: request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
     safetySettings: getSafetySettings(getSafetyThreshold()),
-    abortSignal,
+    ...(abortSignal ? { abortSignal } : {}),
   };
 
   const tools: GenerateContentConfig['tools'] = [];
@@ -127,6 +126,13 @@ function buildGenerationConfig(
   }
   if (request.useCodeExecution) {
     tools.push({ codeExecution: {} });
+  }
+  if (request.fileSearchStoreNames && request.fileSearchStoreNames.length > 0) {
+    tools.push({
+      fileSearch: {
+        fileSearchStoreNames: [...request.fileSearchStoreNames],
+      },
+    });
   }
 
   if (tools.length > 0) {
@@ -385,6 +391,14 @@ async function executeAttempt(
     return {
       text: response.text,
       groundingMetadata: response.candidates?.[0]?.groundingMetadata,
+    };
+  }
+
+  if (request.fileSearchStoreNames && request.fileSearchStoreNames.length > 0) {
+    const parts = (response.candidates?.[0]?.content?.parts ?? []) as unknown[];
+    return {
+      text: response.text ?? '',
+      parts,
     };
   }
 
@@ -740,7 +754,7 @@ async function createBatchJobWithFallback(
 ): Promise<unknown> {
   let currentModel = model;
   let effectiveRequest: GeminiStructuredRequest = request;
-  const createSignal = request.signal ?? NEVER_ABORT_SIGNAL;
+  const createSignal = request.signal;
 
   for (let attempt = 0; attempt <= 1; attempt += 1) {
     try {
@@ -911,6 +925,19 @@ export async function generateGroundedContent(
     // Provide a dummy schema if one is required by types, though it won't be used due to useGrounding check
     responseSchema: request.responseSchema,
   })) as { text: string; groundingMetadata: unknown };
+}
+
+export interface FileSearchResponse {
+  text: string;
+  parts: unknown[];
+}
+
+export async function generateWithFileSearch(
+  request: GeminiStructuredRequest & {
+    fileSearchStoreNames: readonly string[];
+  }
+): Promise<FileSearchResponse> {
+  return (await generateStructuredJson(request)) as FileSearchResponse;
 }
 
 export async function generateStructuredJson(

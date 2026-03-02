@@ -88,11 +88,14 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
 // Temperatures
 // ---------------------------------------------------------------------------
 
+// Gemini 3 recommends temperature 1.0 for all tasks.
+// Separate constants are retained so per-category tuning is possible
+// if future models or workloads warrant different values.
 const TOOL_TEMPERATURE = {
-  analysis: 1.0, // Gemini 3 recommends 1.0 for all tasks
-  creative: 1.0, // Gemini 3 recommends 1.0 for all tasks
-  patch: 1.0, // Gemini 3 recommends 1.0 for all tasks
-  triage: 1.0, // Gemini 3 recommends 1.0 for all tasks
+  analysis: 1.0,
+  creative: 1.0,
+  patch: 1.0,
+  triage: 1.0,
 } as const;
 
 /** Temperature for analytical tools. */

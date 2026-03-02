@@ -28,7 +28,6 @@ export function resetDefaultModelForTesting(): void {
 
 export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_TIMEOUT_MS = 90_000;
-export const DEFAULT_MAX_OUTPUT_TOKENS = 16_384;
 export const CANCELLED_REQUEST_MESSAGE = 'Gemini request was cancelled.';
 const UNKNOWN_REQUEST_CONTEXT_VALUE_STR = 'unknown';
 export { UNKNOWN_REQUEST_CONTEXT_VALUE_STR as UNKNOWN_REQUEST_CONTEXT_VALUE };

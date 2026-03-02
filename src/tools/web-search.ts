@@ -1,14 +1,14 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import { getErrorMessage } from '../lib/errors.js';
 import { generateGroundedContent } from '../lib/gemini/index.js';
 import {
-  createErrorToolResponse,
-  createToolResponse,
-  wrapToolHandler,
+  buildStructuredToolExecutionOptions,
+  registerStructuredToolTask,
+  requireToolContract,
 } from '../lib/tools.js';
 import { WebSearchInputSchema } from '../schemas/inputs.js';
-import { DefaultOutputSchema } from '../schemas/outputs.js';
+import { WebSearchResultSchema } from '../schemas/outputs.js';
+import type { WebSearchResult } from '../schemas/outputs.js';
 
 interface GroundingChunk {
   web?: {
@@ -80,57 +80,49 @@ function formatGroundedResponse(
   return formattedText;
 }
 
+const TOOL_CONTRACT = requireToolContract('web_search');
+
 export function registerWebSearchTool(server: McpServer): void {
-  server.registerTool(
-    'web_search',
-    {
-      title: 'Web Search',
-      description:
-        'Perform a Google Search with Grounding to get up-to-date information.',
-      inputSchema: WebSearchInputSchema,
-      outputSchema: DefaultOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: true,
-        destructiveHint: false,
-      },
+  registerStructuredToolTask(server, {
+    name: 'web_search',
+    title: 'Web Search',
+    description:
+      'Perform a Google Search with Grounding to get up-to-date information.',
+    inputSchema: WebSearchInputSchema,
+    fullInputSchema: WebSearchInputSchema,
+    resultSchema: WebSearchResultSchema,
+    errorCode: 'E_WEB_SEARCH',
+    ...buildStructuredToolExecutionOptions(TOOL_CONTRACT),
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+      destructiveHint: false,
     },
-    wrapToolHandler(
-      {
-        toolName: 'web_search',
-        progressContext: (input) => input.query.slice(0, 60),
-      },
-      async (input) => {
-        try {
-          const result = await generateGroundedContent({
-            prompt: input.query,
-            responseSchema: {},
-          });
+    progressContext: (input) => input.query.slice(0, 60),
+    formatOutput: (result) => result.text.slice(0, 200),
+    buildPrompt: (input) => ({
+      systemInstruction: '',
+      prompt: input.query,
+    }),
+    customGenerate: async (_promptParts, _ctx, opts) => {
+      const result = await generateGroundedContent({
+        prompt: _promptParts.prompt,
+        responseSchema: {},
+        ...(opts.signal ? { signal: opts.signal } : {}),
+        onLog: opts.onLog,
+      });
 
-          const { text } = result;
-          const metadata = result.groundingMetadata as
-            | GroundingMetadata
-            | undefined;
-          const formatted = formatGroundedResponse(text, metadata);
+      const { text } = result;
+      const metadata = result.groundingMetadata as
+        | GroundingMetadata
+        | undefined;
+      const formatted = formatGroundedResponse(text, metadata);
 
-          return createToolResponse(
-            {
-              ok: true as const,
-              result: {
-                text: formatted,
-                groundingMetadata: metadata ?? {},
-              },
-            },
-            formatted.slice(0, 200)
-          );
-        } catch (error) {
-          return createErrorToolResponse(
-            'E_WEB_SEARCH',
-            getErrorMessage(error)
-          );
-        }
-      }
-    )
-  );
+      return WebSearchResultSchema.parse({
+        text: formatted,
+        groundingMetadata: metadata ?? {},
+      }) satisfies WebSearchResult;
+    },
+  });
 }

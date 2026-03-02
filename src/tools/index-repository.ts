@@ -255,15 +255,10 @@ export function registerIndexRepositoryTool(server: McpServer): void {
           );
         }
 
-        // Clean up previous store (fire-and-forget)
+        // Capture previous store for cleanup after swap
         const previousStore = getCurrentSearchStore();
-        if (previousStore) {
-          void deleteSearchStore(previousStore.storeName).catch(() => {
-            // Best-effort cleanup; errors are logged inside deleteSearchStore
-          });
-        }
 
-        // Create store
+        // Create new store
         const displayName = parsed.displayName ?? path.basename(rootPath);
         const storeName = await createSearchStore(displayName);
         if (!storeName) {
@@ -306,12 +301,20 @@ export function registerIndexRepositoryTool(server: McpServer): void {
           }
         }
 
+        // Swap reference: new store becomes active before old is deleted
         setCurrentSearchStore({
           storeName,
           displayName,
           documentCount: uploaded,
           createdAt: Date.now(),
         });
+
+        // Clean up previous store (fire-and-forget, after swap)
+        if (previousStore) {
+          void deleteSearchStore(previousStore.storeName).catch(() => {
+            // Best-effort cleanup; errors are logged inside deleteSearchStore
+          });
+        }
 
         const message = `Indexed ${String(uploaded)} files into ${storeName} (${String(skipped)} skipped).`;
         return createToolResponse(

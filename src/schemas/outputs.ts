@@ -321,7 +321,7 @@ const EXECUTION_OUTCOMES = [
   'OUTCOME_UNSPECIFIED',
 ] as const;
 
-export const VerifyLogicResultSchema = z.strictObject({
+export const VerifyLogicGeminiResultSchema = z.strictObject({
   answer: z
     .string()
     .min(1)
@@ -348,10 +348,16 @@ export const VerifyLogicResultSchema = z.strictObject({
     )
     .max(10)
     .describe('Results from server-side code execution.'),
+});
+
+export const VerifyLogicResultSchema = VerifyLogicGeminiResultSchema.extend({
   filePath: z.string().describe('Analyzed file path.'),
   language: z.string().describe('Detected/provided language.'),
 });
 
+export type VerifyLogicGeminiResult = z.infer<
+  typeof VerifyLogicGeminiResultSchema
+>;
 export type VerifyLogicResult = z.infer<typeof VerifyLogicResultSchema>;
 
 // ---------------------------------------------------------------------------
@@ -391,3 +397,20 @@ export const QueryRepositoryResultSchema = z.strictObject({
 
 export type QueryRepositorySource = z.infer<typeof QueryRepositorySourceSchema>;
 export type QueryRepositoryResult = z.infer<typeof QueryRepositoryResultSchema>;
+
+// ---------------------------------------------------------------------------
+// Web search
+// ---------------------------------------------------------------------------
+
+export const WebSearchResultSchema = z.strictObject({
+  text: z
+    .string()
+    .min(1)
+    .max(50_000)
+    .describe('Formatted search result text with citations.'),
+  groundingMetadata: z
+    .unknown()
+    .describe('Raw grounding metadata from search.'),
+});
+
+export type WebSearchResult = z.infer<typeof WebSearchResultSchema>;

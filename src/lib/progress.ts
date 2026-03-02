@@ -30,6 +30,7 @@ export interface ProgressPayload {
 
 export interface ProgressExtra {
   _meta?: { progressToken?: unknown };
+  signal?: AbortSignal;
   sendNotification: (notification: {
     method: 'notifications/progress';
     params: ProgressNotificationParams;

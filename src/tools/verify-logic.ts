@@ -1,26 +1,25 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-import { getErrorMessage } from '../lib/errors.js';
-import {
-  createNoFileError,
-  getFile,
-  validateFileBudget,
-} from '../lib/file-store.js';
 import {
   type CodeExecutionResponse,
   generateWithCodeExecution,
 } from '../lib/gemini/index.js';
 import {
-  createErrorToolResponse,
-  createToolResponse,
-  wrapToolHandler,
+  buildStructuredToolExecutionOptions,
+  getFileContextSnapshot,
+  registerStructuredToolTask,
+  requireToolContract,
 } from '../lib/tools.js';
 import { VerifyLogicInputSchema } from '../schemas/inputs.js';
+import type { VerifyLogicInput } from '../schemas/inputs.js';
 import {
-  DefaultOutputSchema,
+  VerifyLogicGeminiResultSchema,
   VerifyLogicResultSchema,
 } from '../schemas/outputs.js';
-import type { VerifyLogicResult } from '../schemas/outputs.js';
+import type {
+  VerifyLogicGeminiResult,
+  VerifyLogicResult,
+} from '../schemas/outputs.js';
 
 const OUTCOME_OK = 'OUTCOME_OK';
 
@@ -51,80 +50,74 @@ function deriveVerified(result: CodeExecutionResponse): boolean {
   return result.executionResults.every((r) => r.outcome === OUTCOME_OK);
 }
 
+const TOOL_CONTRACT = requireToolContract('verify_logic');
+
 export function registerVerifyLogicTool(server: McpServer): void {
-  server.registerTool(
-    'verify_logic',
-    {
-      title: 'Verify Logic',
-      description:
-        'Verify algorithms and logic in a cached file using Gemini code execution sandbox. Prerequisite: load_file. Auto-infer language.',
-      inputSchema: VerifyLogicInputSchema,
-      outputSchema: DefaultOutputSchema,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: false,
-        destructiveHint: false,
-      },
+  registerStructuredToolTask<
+    VerifyLogicInput,
+    VerifyLogicGeminiResult,
+    VerifyLogicResult
+  >(server, {
+    name: 'verify_logic',
+    title: 'Verify Logic',
+    description:
+      'Verify algorithms and logic in a cached file using Gemini code execution sandbox. Prerequisite: load_file. Auto-infer language.',
+    inputSchema: VerifyLogicInputSchema,
+    fullInputSchema: VerifyLogicInputSchema,
+    resultSchema: VerifyLogicResultSchema,
+    geminiSchema: VerifyLogicGeminiResultSchema,
+    errorCode: 'E_VERIFY_LOGIC',
+    ...buildStructuredToolExecutionOptions(TOOL_CONTRACT),
+    requiresFile: true,
+    annotations: {
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
-    wrapToolHandler(
-      {
-        toolName: 'verify_logic',
-        progressContext: (input) => input.question.slice(0, 60),
-      },
-      async (input) => {
-        const file = getFile();
-        if (!file) {
-          return createNoFileError();
-        }
+    progressContext: (input) => input.question.slice(0, 60),
+    formatOutcome: (result) =>
+      `verified: ${String(result.verified)} | ${result.codeBlocks.length} block(s)`,
+    formatOutput: (result) =>
+      `verified: ${String(result.verified)} | ${result.codeBlocks.length} code block(s), ${result.executionResults.length} execution(s)`,
+    buildPrompt: (input, ctx) => {
+      const {
+        filePath,
+        content,
+        language: fileLanguage,
+      } = getFileContextSnapshot(ctx);
+      const language = input.language ?? fileLanguage;
 
-        // Snapshot file content once to avoid TOCTOU race
-        const { content: fileContent, filePath, language: fileLanguage } = file;
+      return {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        prompt: `Language: ${language}\nFile: ${filePath}\n\nSource code:\n${content}\n\nVerification request: ${input.question}`,
+      };
+    },
+    transformResult: (input, result, ctx) => {
+      const { filePath, language: fileLanguage } = getFileContextSnapshot(ctx);
+      return {
+        ...result,
+        filePath,
+        language: input.language ?? fileLanguage,
+      };
+    },
+    customGenerate: async (promptParts, _ctx, opts) => {
+      const response = await generateWithCodeExecution({
+        systemInstruction: promptParts.systemInstruction,
+        prompt: promptParts.prompt,
+        responseSchema: {},
+        ...(opts.signal ? { signal: opts.signal } : {}),
+        onLog: opts.onLog,
+      });
 
-        const budgetError = validateFileBudget(fileContent);
-        if (budgetError) {
-          return budgetError;
-        }
+      const verified = deriveVerified(response);
 
-        const parsed = VerifyLogicInputSchema.parse(input);
-        const language = parsed.language ?? fileLanguage;
-
-        const prompt = `Language: ${language}\nFile: ${filePath}\n\nSource code:\n${fileContent}\n\nVerification request: ${parsed.question}`;
-
-        try {
-          const response = await generateWithCodeExecution({
-            systemInstruction: SYSTEM_INSTRUCTION,
-            prompt,
-            responseSchema: {},
-          });
-
-          const verified = deriveVerified(response);
-
-          const result: VerifyLogicResult = VerifyLogicResultSchema.parse({
-            answer: response.text || 'No analysis text returned.',
-            verified,
-            codeBlocks: response.codeBlocks,
-            executionResults: response.executionResults,
-            filePath,
-            language,
-          });
-
-          const summary = `verified: ${String(verified)} | ${result.codeBlocks.length} code block(s), ${result.executionResults.length} execution(s)`;
-
-          return createToolResponse(
-            {
-              ok: true as const,
-              result,
-            },
-            summary
-          );
-        } catch (error) {
-          return createErrorToolResponse(
-            'E_VERIFY_LOGIC',
-            getErrorMessage(error)
-          );
-        }
-      }
-    )
-  );
+      return VerifyLogicGeminiResultSchema.parse({
+        answer: response.text || 'No analysis text returned.',
+        verified,
+        codeBlocks: response.codeBlocks,
+        executionResults: response.executionResults,
+      });
+    },
+  });
 }

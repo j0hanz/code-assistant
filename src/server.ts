@@ -32,7 +32,7 @@ const SERVER_CAPABILITIES = {
   completions: {},
   prompts: {},
   resources: { subscribe: true },
-  tools: {},
+  tools: { listChanged: true },
   tasks: {
     list: {},
     cancel: {},

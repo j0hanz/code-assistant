@@ -62,9 +62,11 @@ export {
 } from './search-store.js';
 
 // Generation functions + queue snapshot
+export type { FileSearchResponse } from './generate.js';
 export {
   generateGroundedContent,
   generateStructuredJson,
   generateWithCodeExecution,
+  generateWithFileSearch,
   getGeminiQueueSnapshot,
 } from './generate.js';

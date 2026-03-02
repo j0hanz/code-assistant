@@ -15,6 +15,7 @@ export interface GeminiRequestExecutionOptions {
   batchMode?: 'off' | 'inline';
   useGrounding?: boolean;
   useCodeExecution?: boolean;
+  fileSearchStoreNames?: readonly string[];
 }
 
 export interface GeminiStructuredRequestOptions extends GeminiRequestExecutionOptions {
