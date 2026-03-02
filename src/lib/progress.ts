@@ -264,6 +264,7 @@ export interface TaskStatusReporter {
     status: 'completed' | 'failed',
     result: { isError?: boolean; content: { type: string; text: string }[] }
   ) => Promise<void>;
+  reportCancellation?: (message: string) => Promise<void>;
 }
 
 export class RunReporter {
@@ -306,6 +307,17 @@ export class RunReporter {
         event: 'store_result_failed',
         error: getErrorMessage(storeErr),
       });
+    }
+  }
+
+  async reportCancellation(message: string): Promise<void> {
+    if (!this.statusReporter.reportCancellation) {
+      return;
+    }
+    try {
+      await this.statusReporter.reportCancellation(message);
+    } catch {
+      // Best-effort: cancellation status update must not throw
     }
   }
 

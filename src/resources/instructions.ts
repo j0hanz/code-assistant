@@ -89,6 +89,6 @@ ${constraintLines}
 - Progress steps (0–6): starting → validating input → building prompt → calling model → validating response → finalizing → done.
 - Status messages update at each phase for task introspection.
 - Schema repair: on validation failure, retries with error feedback (configurable via \`GEMINI_SCHEMA_RETRIES\`).
-- Task terminal states: \`completed\` and \`failed\`; cancellations are surfaced as \`failed\` with \`error.kind=cancelled\`.
+- Task terminal states: \`completed\`, \`failed\`, and \`cancelled\`.
 `;
 }

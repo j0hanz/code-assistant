@@ -529,6 +529,12 @@ export class ToolExecutionRunner<
     };
   }
 
+  private throwIfAborted(): void {
+    if (this.signal?.aborted) {
+      throw new DOMException('Task cancelled', 'AbortError');
+    }
+  }
+
   private async handleInternalLog(data: unknown): Promise<void> {
     const record = asObjectRecord(data);
     if (record.event === 'gemini_retry') {
@@ -721,7 +727,15 @@ export class ToolExecutionRunner<
       errorMeta
     );
 
-    await this.reporter.storeResultSafely('failed', errorResponse, this.onLog);
+    if (outcome === 'cancelled') {
+      await this.reporter.reportCancellation(errorMessage);
+    } else {
+      await this.reporter.storeResultSafely(
+        'failed',
+        errorResponse,
+        this.onLog
+      );
+    }
     await this.reporter.reportCompletion(outcome);
     return errorResponse;
   }
@@ -743,6 +757,7 @@ export class ToolExecutionRunner<
       const ctx = this.createExecutionContext();
       this.executionCtx = ctx;
 
+      this.throwIfAborted();
       await this.reporter.reportStep(
         STEP_VALIDATING,
         'Validating request parameters...'
@@ -753,6 +768,7 @@ export class ToolExecutionRunner<
         return validationError;
       }
 
+      this.throwIfAborted();
       await this.reporter.reportStep(
         STEP_BUILDING_PROMPT,
         'Constructing analysis context...'
@@ -761,6 +777,7 @@ export class ToolExecutionRunner<
       const promptParts = this.config.buildPrompt(inputRecord, ctx);
       const { prompt, systemInstruction } = promptParts;
 
+      this.throwIfAborted();
       await this.reporter.reportStep(
         STEP_CALLING_MODEL,
         'Querying Gemini model...'
@@ -776,6 +793,7 @@ export class ToolExecutionRunner<
         parsed = await this.executeModelCall(systemInstruction, prompt);
       }
 
+      this.throwIfAborted();
       await this.reporter.reportStep(STEP_FINALIZING, 'Processing results...');
 
       const finalResult = this.applyResultTransform(inputRecord, parsed, ctx);
@@ -838,6 +856,11 @@ function createTaskStatusReporter(
     storeResult: async (status, result) => {
       await extra.taskStore.storeTaskResult(taskId, status, result);
     },
+    reportCancellation: async (message) => {
+      if (hasTaskStatusUpdate(store)) {
+        await store.updateTaskStatus(taskId, 'cancelled', message);
+      }
+    },
   };
 }
 
@@ -853,6 +876,8 @@ function runToolTaskInBackground<
   signal?: AbortSignal
 ): void {
   runner.run(input).catch(async (error: unknown) => {
+    // Safety net: run() swallows errors via handleRunFailure, so this only fires
+    // if handleRunFailure itself throws (e.g. reporter/store internal crash).
     const isAbort =
       error != null &&
       typeof error === 'object' &&
@@ -933,7 +958,12 @@ export function registerStructuredToolTask<
           extra.signal
         );
 
-        return { task };
+        return {
+          task,
+          _meta: {
+            'io.modelcontextprotocol/model-immediate-response': `${config.title} is running in the background.`,
+          },
+        };
       },
       getTask: async (input: unknown, extra: TaskRequestHandlerExtra) => {
         return await extra.taskStore.getTask(extra.taskId);
