@@ -5,7 +5,6 @@ import {
 
 import { DIFF_RESOURCE_URI, getDiff } from '../lib/diff.js';
 import { getFile, SOURCE_RESOURCE_URI } from '../lib/file-store.js';
-import { getCurrentSearchStore } from '../lib/gemini/index.js';
 
 import { buildServerConfig } from './server-config.js';
 import { buildToolCatalog } from './tool-catalog.js';
@@ -203,36 +202,6 @@ function registerFileResource(server: McpServer): void {
   );
 }
 
-export const REPOSITORY_RESOURCE_URI = 'repository://current';
-export const REPOSITORY_RESOURCE_DESCRIPTION =
-  'Current indexed repository search store status. Populated by index_repository.';
-
-function formatRepositoryResourceText(): string {
-  const slot = getCurrentSearchStore();
-  if (!slot) {
-    return '# No repository indexed. Call index_repository first.';
-  }
-
-  const ageMinutes = Math.round((Date.now() - slot.createdAt) / 60_000);
-  return `# Repository Store — ${slot.displayName}\n- Store: ${slot.storeName}\n- Documents: ${String(slot.documentCount)}\n- Age: ${String(ageMinutes)} min`;
-}
-
-function registerRepositoryResource(server: McpServer): void {
-  server.registerResource(
-    'repository-current',
-    REPOSITORY_RESOURCE_URI,
-    {
-      title: 'Current Repository Store',
-      description: REPOSITORY_RESOURCE_DESCRIPTION,
-      mimeType: RESOURCE_MIME_TYPE,
-      annotations: createResourceAnnotations(0.5),
-    },
-    (uri: URL) => ({
-      contents: [createMarkdownContent(uri, formatRepositoryResourceText())],
-    })
-  );
-}
-
 export function registerAllResources(
   server: McpServer,
   instructions: string
@@ -245,5 +214,4 @@ export function registerAllResources(
   registerToolInfoResources(server);
   registerDiffResource(server);
   registerFileResource(server);
-  registerRepositoryResource(server);
 }

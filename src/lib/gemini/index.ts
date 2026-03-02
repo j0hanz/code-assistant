@@ -48,19 +48,6 @@ export {
   shouldCacheDiff,
 } from './cache.js';
 
-// File Search Stores (RAG)
-export {
-  clearSearchStoreLocal,
-  createSearchStore,
-  type SearchStoreSlot,
-  deleteSearchStore,
-  getCurrentSearchStore,
-  getSearchStoreInfo,
-  setCurrentSearchStore,
-  setSearchStoreForTesting,
-  uploadToSearchStore,
-} from './search-store.js';
-
 // Generation functions + queue snapshot
 export type { FileSearchResponse } from './generate.js';
 export {

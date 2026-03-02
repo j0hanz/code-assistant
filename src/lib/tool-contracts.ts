@@ -161,7 +161,7 @@ const FILE_PATH_PARAM = createParam(
   'string',
   true,
   '1-500 chars',
-  'Absolute path to the file to analyze.'
+  'Relative to workspace root (e.g. src/app.ts) or absolute. Must be within workspace.'
 );
 
 const QUESTION_PARAM = createParam(
@@ -194,30 +194,6 @@ const RESPONSE_STYLE_PARAM = createParam(
   false,
   "'concise' | 'detailed' | 'bullets' | 'code_focused'",
   'Output format. Default: concise (2-4 sentences).'
-);
-
-const QUERY_REPO_PARAM = createParam(
-  'query',
-  'string',
-  true,
-  '1-2000 chars',
-  'Natural-language question about the repository codebase.'
-);
-
-const ROOT_PATH_PARAM = createParam(
-  'rootPath',
-  'string',
-  true,
-  '1-500 chars',
-  'Absolute path to the repository root directory.'
-);
-
-const DISPLAY_NAME_PARAM = createParam(
-  'displayName',
-  'string',
-  false,
-  '1-100 chars',
-  'Display name for the search store. Default: directory name.'
 );
 
 export const TOOL_CONTRACTS = [
@@ -342,7 +318,7 @@ export const TOOL_CONTRACTS = [
   {
     name: 'load_file',
     purpose:
-      'Read a single file from disk and cache it server-side. MUST be called before any file analysis tool.',
+      'Cache a single file for analysis tools. Accepts relative path from workspace root (preferred) or absolute path.',
     model: 'none',
     timeoutMs: 0,
     maxOutputTokens: 0,
@@ -436,43 +412,6 @@ export const TOOL_CONTRACTS = [
     ],
     crossToolFlow: [
       'Standalone tool for fetching up-to-date information from the web.',
-    ],
-  },
-  {
-    name: 'index_repository',
-    purpose:
-      'Walk a local repository, upload source files to a Gemini File Search Store for RAG queries.',
-    model: 'none',
-    timeoutMs: 0,
-    maxOutputTokens: 0,
-    params: cloneParams(ROOT_PATH_PARAM, DISPLAY_NAME_PARAM),
-    outputShape:
-      '{ok, result: {storeName, displayName, filesUploaded, filesSkipped, message}}',
-    gotchas: [
-      'Must be called before query_repository.',
-      'Max 500 files, 1 MB per file.',
-      'Re-indexing replaces the previous store.',
-    ],
-    crossToolFlow: ['Creates a search store consumed by query_repository.'],
-  },
-  {
-    name: 'query_repository',
-    purpose:
-      'Query the indexed repository search store using natural language.',
-    model: FLASH_MODEL,
-    timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
-    thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
-    temperature: ANALYSIS_TEMPERATURE,
-    deterministicJson: true,
-    params: cloneParams(QUERY_REPO_PARAM, LANGUAGE_PARAM),
-    outputShape: '{ok, result: {answer, references[]}}',
-    gotchas: [
-      'Requires index_repository first.',
-      'Quality depends on indexed file coverage.',
-    ],
-    crossToolFlow: [
-      'Use after index_repository for targeted codebase questions.',
     ],
   },
   {

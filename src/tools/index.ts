@@ -9,9 +9,7 @@ import { registerGenerateDiffTool } from './generate-diff.js';
 import { registerGenerateDocumentationTool } from './generate-documentation.js';
 import { registerGenerateReviewSummaryTool } from './generate-review-summary.js';
 import { registerGenerateTestPlanTool } from './generate-test-plan.js';
-import { registerIndexRepositoryTool } from './index-repository.js';
 import { registerLoadFileTool } from './load-file.js';
-import { registerQueryRepositoryTool } from './query-repository.js';
 import { registerRefactorCodeTool } from './refactor-code.js';
 import { registerVerifyLogicTool } from './verify-logic.js';
 import { registerWebSearchTool } from './web-search.js';
@@ -32,8 +30,6 @@ const TOOL_REGISTRARS = [
   registerAskTool,
   registerVerifyLogicTool,
   registerWebSearchTool,
-  registerIndexRepositoryTool,
-  registerQueryRepositoryTool,
 ] as const satisfies readonly ToolRegistrar[];
 
 export function registerAllTools(server: McpServer): void {

@@ -54,13 +54,15 @@ export function registerLoadFileTool(server: McpServer): void {
     {
       title: 'Load File',
       description:
-        'Read a single file from disk and cache it for file analysis tools. You MUST call this tool before calling any file analysis tool (e.g. refactor_code). Pass the absolute file path. The file must be within the workspace root.',
+        'Cache a single file for analysis tools (refactor_code, ask_about_code, verify_logic). Overwrites previous cache. Path is relative to server working directory (e.g. src/index.ts) or absolute (e.g. /home/user/project/src/index.ts).',
       inputSchema: z.strictObject({
         filePath: z
           .string()
           .min(1)
           .max(500)
-          .describe('Absolute path to the file to analyze.'),
+          .describe(
+            'File path relative to workspace root (e.g. src/index.ts, lib/utils.ts) or absolute. Must be within workspace. No .env, .git/, node_modules/.'
+          ),
       }),
       outputSchema: DefaultOutputSchema,
       annotations: {

@@ -484,44 +484,6 @@ export type DetectCodeSmellsResult = z.infer<
 >;
 
 // ---------------------------------------------------------------------------
-// Repository indexing & query
-// ---------------------------------------------------------------------------
-
-export const IndexRepositoryResultSchema = z.strictObject({
-  storeName: z.string().describe('File Search Store resource name.'),
-  displayName: z.string().describe('Human-readable store name.'),
-  filesUploaded: z.int().min(0).describe('Files successfully uploaded.'),
-  filesSkipped: z
-    .int()
-    .min(0)
-    .describe('Files skipped (binary, too large, denied).'),
-  message: z.string().describe('Summary message.'),
-});
-
-export type IndexRepositoryResult = z.infer<typeof IndexRepositoryResultSchema>;
-
-export const QueryRepositorySourceSchema = z.strictObject({
-  fileSearchStore: z
-    .string()
-    .max(200)
-    .optional()
-    .describe('Search store that provided this result.'),
-  title: z.string().max(500).optional().describe('Document title.'),
-  text: z.string().max(2000).optional().describe('Relevant excerpt.'),
-});
-
-export const QueryRepositoryResultSchema = z.strictObject({
-  answer: z.string().min(1).max(10_000).describe('Answer to the query.'),
-  sources: z
-    .array(QueryRepositorySourceSchema)
-    .max(20)
-    .describe('Source documents cited.'),
-});
-
-export type QueryRepositorySource = z.infer<typeof QueryRepositorySourceSchema>;
-export type QueryRepositoryResult = z.infer<typeof QueryRepositoryResultSchema>;
-
-// ---------------------------------------------------------------------------
 // Web search
 // ---------------------------------------------------------------------------
 

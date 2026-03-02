@@ -2,8 +2,7 @@ import path from 'node:path';
 
 /**
  * Maps common source-file extensions to their language name.
- * Used by load_file for language detection and index_repository
- * to derive the default allowed-extension set.
+ * Used by load_file for language detection.
  */
 export const EXTENSION_LANGUAGE_MAP: ReadonlyMap<string, string> = new Map([
   ['.ts', 'TypeScript'],
