@@ -256,18 +256,40 @@ async function generateContentWithTimeout(
 // Thoughts extraction
 // ---------------------------------------------------------------------------
 
+interface ThoughtPart {
+  thought: true;
+  text: string;
+}
+
+function isThoughtPart(part: unknown): part is ThoughtPart {
+  return (
+    typeof part === 'object' &&
+    part !== null &&
+    (part as { thought?: unknown }).thought === true &&
+    typeof (part as { text?: unknown }).text === 'string'
+  );
+}
+
+interface TextOnlyPart {
+  text: string;
+}
+
+function isTextOnlyPart(part: unknown): part is TextOnlyPart {
+  return (
+    typeof part === 'object' &&
+    part !== null &&
+    'text' in part &&
+    typeof (part as { text: unknown }).text === 'string' &&
+    !(part as { thought?: unknown }).thought
+  );
+}
+
 function extractThoughtsFromParts(parts: unknown): string | undefined {
   if (!Array.isArray(parts)) {
     return undefined;
   }
 
-  const thoughtParts = parts.filter(
-    (part) =>
-      typeof part === 'object' &&
-      part !== null &&
-      (part as { thought?: unknown }).thought === true &&
-      typeof (part as { text?: unknown }).text === 'string'
-  ) as { text: string }[];
+  const thoughtParts = parts.filter(isThoughtPart);
 
   if (thoughtParts.length === 0) {
     return undefined;
@@ -328,13 +350,8 @@ function extractCodeExecutionResponse(
           outcome: part.codeExecutionResult.outcome ?? 'OUTCOME_UNSPECIFIED',
           output: part.codeExecutionResult.output ?? '',
         });
-      } else if (
-        typeof part === 'object' &&
-        'text' in part &&
-        typeof (part as { text: unknown }).text === 'string' &&
-        !(part as { thought?: unknown }).thought
-      ) {
-        textSegments.push((part as { text: string }).text);
+      } else if (isTextOnlyPart(part)) {
+        textSegments.push(part.text);
       }
     }
   }
@@ -833,6 +850,7 @@ async function runInlineBatchWithPolling(
   model: string,
   onLog: GeminiOnLog
 ): Promise<unknown> {
+  // SDK batch API is not yet typed in @google/genai; cast verified by !batches guard below.
   const client = getClient() as unknown as BatchApiClient;
   const { batches } = client;
   if (!batches) {

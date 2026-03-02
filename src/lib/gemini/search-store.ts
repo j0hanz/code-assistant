@@ -91,10 +91,13 @@ export async function getSearchStoreInfo(storeName: string): Promise<
 
     return {
       name: store.name ?? storeName,
-      activeDocuments: Number.parseInt(store.activeDocumentsCount ?? '0', 10),
-      pendingDocuments: Number.parseInt(store.pendingDocumentsCount ?? '0', 10),
-      failedDocuments: Number.parseInt(store.failedDocumentsCount ?? '0', 10),
-      sizeBytes: Number.parseInt(store.sizeBytes ?? '0', 10),
+      activeDocuments:
+        Number.parseInt(store.activeDocumentsCount ?? '0', 10) || 0,
+      pendingDocuments:
+        Number.parseInt(store.pendingDocumentsCount ?? '0', 10) || 0,
+      failedDocuments:
+        Number.parseInt(store.failedDocumentsCount ?? '0', 10) || 0,
+      sizeBytes: Number.parseInt(store.sizeBytes ?? '0', 10) || 0,
     };
   } catch (error: unknown) {
     debug('Failed to get store info for %s: %O', storeName, error);

@@ -2,7 +2,7 @@
   "name": "@j0hanz/code-assistant",
   "version": "0.9.1",
   "mcpName": "io.github.j0hanz/code-assistant",
-  "description": "Gemini-powered MCP server for code analysis.",
+  "description": "A versatile code assistant that provides code suggestions, explanations, and refactorings using the Google GenAI API.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,6 +27,17 @@
     "url": "https://github.com/j0hanz/code-assistant.git"
   },
   "homepage": "https://github.com/j0hanz/code-assistant#readme",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "code-assistant",
+    "code-review",
+    "code-suggestions",
+    "code-explanations",
+    "code-refactorings",
+    "google-genai",
+    "typescript"
+  ],
   "scripts": {
     "clean": "node scripts/tasks.mjs clean",
     "build": "node scripts/tasks.mjs build",

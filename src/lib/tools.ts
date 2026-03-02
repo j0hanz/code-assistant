@@ -795,6 +795,19 @@ interface ExtendedRequestTaskStore extends RequestTaskStore {
   ): Promise<void>;
 }
 
+/** Runtime check: SDK's InMemoryTaskStore exposes updateTaskStatus. */
+function hasTaskStatusUpdate(
+  store: RequestTaskStore
+): store is RequestTaskStore &
+  Pick<ExtendedRequestTaskStore, 'updateTaskStatus'> {
+  return 'updateTaskStatus' in store;
+}
+
+// Adapter to convert MCP task handler extra into progress reporter extra, which currently only differs by the presence of updateTaskStatus.
+function toProgressExtra(extra: CreateTaskRequestHandlerExtra): ProgressExtra {
+  return extra as unknown as ProgressExtra;
+}
+
 export function createGeminiLogger(
   server: McpServer
 ): (level: string, data: unknown) => Promise<void> {
@@ -814,13 +827,12 @@ export function createGeminiLogger(
 function createTaskStatusReporter(
   taskId: string,
   extra: CreateTaskRequestHandlerExtra,
-  extendedStore: ExtendedRequestTaskStore
+  store: RequestTaskStore
 ): TaskStatusReporter {
-  const hasUpdateStatus = typeof extendedStore.updateTaskStatus === 'function';
   return {
     updateStatus: async (message) => {
-      if (hasUpdateStatus) {
-        await extendedStore.updateTaskStatus(taskId, 'working', message);
+      if (hasTaskStatusUpdate(store)) {
+        await store.updateTaskStatus(taskId, 'working', message);
       }
     },
     storeResult: async (status, result) => {
@@ -837,7 +849,7 @@ function runToolTaskInBackground<
   runner: ToolExecutionRunner<TInput, TResult, TFinal>,
   input: unknown,
   taskId: string,
-  extendedStore: ExtendedRequestTaskStore,
+  store: RequestTaskStore,
   signal?: AbortSignal
 ): void {
   runner.run(input).catch(async (error: unknown) => {
@@ -849,8 +861,8 @@ function runToolTaskInBackground<
     const isCancelled = (signal?.aborted ?? false) || isAbort;
 
     try {
-      if (typeof extendedStore.updateTaskStatus === 'function') {
-        await extendedStore.updateTaskStatus(
+      if (hasTaskStatusUpdate(store)) {
+        await store.updateTaskStatus(
           taskId,
           isCancelled ? 'cancelled' : 'failed',
           getErrorMessage(error)
@@ -898,20 +910,16 @@ export function registerStructuredToolTask<
         const task = await extra.taskStore.createTask({
           ttl: taskTtlMsConfig.get(),
         });
-        const extendedStore =
-          extra.taskStore as unknown as ExtendedRequestTaskStore;
 
         const runner = new ToolExecutionRunner(
           config,
           {
             onLog: createGeminiLogger(server),
-            reportProgress: getOrCreateProgressReporter(
-              extra as unknown as ProgressExtra
-            ),
+            reportProgress: getOrCreateProgressReporter(toProgressExtra(extra)),
             statusReporter: createTaskStatusReporter(
               task.taskId,
               extra,
-              extendedStore
+              extra.taskStore
             ),
           },
           extra.signal
@@ -921,7 +929,7 @@ export function registerStructuredToolTask<
           runner,
           input,
           task.taskId,
-          extendedStore,
+          extra.taskStore,
           extra.signal
         );
 

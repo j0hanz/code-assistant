@@ -77,9 +77,7 @@ export class ConcurrencyLimiter {
   release(): void {
     if (this.activeCount > 0) {
       this.activeCount--;
-      const next = this.waiters.values().next().value as
-        | (() => void)
-        | undefined;
+      const next = this.waiters.values().next().value;
       if (next) {
         this.waiters.delete(next);
         next();
