@@ -45,7 +45,7 @@ export function validateFileBudget(
 
 // --- File Store ---
 
-export const SOURCE_RESOURCE_URI = 'source://current';
+export const SOURCE_RESOURCE_URI = 'internal://file/current';
 
 const fileCacheTtlMs = createCachedEnvInt(
   'FILE_CACHE_TTL_MS',

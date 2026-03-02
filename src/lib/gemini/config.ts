@@ -17,6 +17,11 @@ export function getDefaultModel(): string {
   return _defaultModel;
 }
 
+/** Test-only: reset cached model so env changes take effect. */
+export function resetDefaultModelForTesting(): void {
+  _defaultModel = undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Execution defaults
 // ---------------------------------------------------------------------------

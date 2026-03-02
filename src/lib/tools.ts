@@ -16,14 +16,10 @@ import { DefaultOutputSchema } from '../schemas/outputs.js';
 import {
   ANALYSIS_TEMPERATURE,
   CREATIVE_TEMPERATURE,
+  DEFAULT_MAX_OUTPUT_TOKENS,
   DEFAULT_TIMEOUT_EXTENDED_MS,
-  FLASH_API_BREAKING_MAX_OUTPUT_TOKENS,
-  FLASH_COMPLEXITY_MAX_OUTPUT_TOKENS,
   FLASH_MODEL,
-  FLASH_REFACTOR_MAX_OUTPUT_TOKENS,
-  FLASH_TEST_PLAN_MAX_OUTPUT_TOKENS,
   FLASH_THINKING_LEVEL,
-  FLASH_TRIAGE_MAX_OUTPUT_TOKENS,
   FLASH_TRIAGE_THINKING_LEVEL,
   TRIAGE_TEMPERATURE,
 } from './config.js';
@@ -361,7 +357,7 @@ export const TOOL_CONTRACTS = [
       'Empty diff (no changes) returns E_NO_CHANGES.',
     ],
     crossToolFlow: [
-      'Caches diff at diff://current — consumed automatically by all review tools.',
+      'Caches diff at internal://diff/current — consumed automatically by all review tools.',
     ],
   },
   {
@@ -371,7 +367,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
-    maxOutputTokens: FLASH_TRIAGE_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: TRIAGE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(REPOSITORY_PARAM, LANGUAGE_PARAM),
@@ -391,7 +387,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
-    maxOutputTokens: FLASH_TRIAGE_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: TRIAGE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(REPOSITORY_PARAM, LANGUAGE_PARAM),
@@ -411,7 +407,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: FLASH_TEST_PLAN_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: CREATIVE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(
@@ -434,7 +430,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: FLASH_COMPLEXITY_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),
@@ -452,7 +448,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
-    maxOutputTokens: FLASH_API_BREAKING_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: TRIAGE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),
@@ -479,7 +475,7 @@ export const TOOL_CONTRACTS = [
       'File must be under workspace root.',
     ],
     crossToolFlow: [
-      'Caches file at source://current — consumed by refactor_code and future analysis tools.',
+      'Caches file at internal://file/current — consumed by refactor_code and future analysis tools.',
     ],
   },
   {
@@ -489,7 +485,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: FLASH_REFACTOR_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(LANGUAGE_PARAM),
@@ -509,7 +505,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: FLASH_REFACTOR_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(QUESTION_PARAM, LANGUAGE_PARAM),
@@ -530,7 +526,7 @@ export const TOOL_CONTRACTS = [
     model: FLASH_MODEL,
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
-    maxOutputTokens: FLASH_REFACTOR_MAX_OUTPUT_TOKENS,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: ANALYSIS_TEMPERATURE,
     deterministicJson: false,
     params: cloneParams(QUESTION_PARAM, LANGUAGE_PARAM),
@@ -542,6 +538,60 @@ export const TOOL_CONTRACTS = [
     ],
     crossToolFlow: [
       'Use after load_file. Complements ask_about_code for verification tasks.',
+    ],
+  },
+  {
+    name: 'web_search',
+    purpose:
+      'Perform a Google Search with Grounding to get up-to-date information.',
+    model: FLASH_MODEL,
+    timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
+    maxOutputTokens: 0,
+    params: cloneParams(QUESTION_PARAM),
+    outputShape: '{ok, result: {text, groundingMetadata}}',
+    gotchas: [
+      'Uses Gemini grounding — results depend on Google Search availability.',
+      'No diff or file prerequisite.',
+    ],
+    crossToolFlow: [
+      'Standalone tool for fetching up-to-date information from the web.',
+    ],
+  },
+  {
+    name: 'index_repository',
+    purpose:
+      'Walk a local repository, upload source files to a Gemini File Search Store for RAG queries.',
+    model: 'none',
+    timeoutMs: 0,
+    maxOutputTokens: 0,
+    params: cloneParams(FILE_PATH_PARAM),
+    outputShape:
+      '{ok, result: {storeName, displayName, filesUploaded, filesSkipped, message}}',
+    gotchas: [
+      'Must be called before query_repository.',
+      'Max 500 files, 1 MB per file.',
+      'Re-indexing replaces the previous store.',
+    ],
+    crossToolFlow: ['Creates a search store consumed by query_repository.'],
+  },
+  {
+    name: 'query_repository',
+    purpose:
+      'Query the indexed repository search store using natural language.',
+    model: FLASH_MODEL,
+    timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
+    thinkingLevel: FLASH_THINKING_LEVEL,
+    maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
+    temperature: ANALYSIS_TEMPERATURE,
+    deterministicJson: true,
+    params: cloneParams(QUESTION_PARAM),
+    outputShape: '{ok, result: {answer, references[]}}',
+    gotchas: [
+      'Requires index_repository first.',
+      'Quality depends on indexed file coverage.',
+    ],
+    crossToolFlow: [
+      'Use after index_repository for targeted codebase questions.',
     ],
   },
 ] as const satisfies readonly ToolContract[];

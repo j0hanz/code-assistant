@@ -2,7 +2,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { getErrorMessage } from '../lib/errors.js';
 import { generateGroundedContent } from '../lib/gemini/index.js';
-import { createErrorToolResponse, wrapToolHandler } from '../lib/tools.js';
+import {
+  createErrorToolResponse,
+  createToolResponse,
+  wrapToolHandler,
+} from '../lib/tools.js';
 import { WebSearchInputSchema } from '../schemas/inputs.js';
 import { DefaultOutputSchema } from '../schemas/outputs.js';
 
@@ -105,17 +109,21 @@ export function registerWebSearchTool(server: McpServer): void {
           });
 
           const { text } = result;
-          const metadata = result.groundingMetadata as GroundingMetadata;
+          const metadata = result.groundingMetadata as
+            | GroundingMetadata
+            | undefined;
           const formatted = formatGroundedResponse(text, metadata);
 
-          return {
-            content: [
-              {
-                type: 'text' as const,
+          return createToolResponse(
+            {
+              ok: true as const,
+              result: {
                 text: formatted,
+                groundingMetadata: metadata ?? {},
               },
-            ],
-          };
+            },
+            formatted.slice(0, 200)
+          );
         } catch (error) {
           return createErrorToolResponse(
             'E_WEB_SEARCH',

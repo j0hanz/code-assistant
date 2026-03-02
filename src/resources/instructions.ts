@@ -14,7 +14,7 @@ const RESOURCE_LIST = [
     (def) => `${toInlineCode(def.uri)}: ${def.description}`
   ),
   `${toInlineCode('internal://tool-info/{toolName}')}: Per-tool contract details.`,
-  `${toInlineCode('diff://current')}: ${DIFF_RESOURCE_DESCRIPTION}`,
+  `${toInlineCode('internal://diff/current')}: ${DIFF_RESOURCE_DESCRIPTION}`,
 ];
 
 function formatParameterLine(parameter: {

@@ -277,7 +277,7 @@ export function formatFileSummary(files: ParsedFile[]): string {
   return computeDiffStatsAndSummaryFromFiles(files).summary;
 }
 
-export const DIFF_RESOURCE_URI = 'diff://current';
+export const DIFF_RESOURCE_URI = 'internal://diff/current';
 
 const diffCacheTtlMs = createCachedEnvInt(
   'DIFF_CACHE_TTL_MS',

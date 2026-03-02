@@ -4,6 +4,16 @@ import { z } from 'zod';
 
 import type { ErrorMeta } from './tools.js';
 
+// --- API key sanitization ---
+
+/** Matches Google AI API keys (AIzaSy...) to prevent accidental leakage in error messages. */
+const API_KEY_PATTERN = /AIza[0-9A-Za-z_-]{35}/g;
+
+/** Remove API keys from a string before it reaches clients. */
+export function sanitizeErrorMessage(message: string): string {
+  return message.replace(API_KEY_PATTERN, '[REDACTED]');
+}
+
 /** Matches transient upstream provider failures that are typically safe to retry. */
 export const RETRYABLE_UPSTREAM_ERROR_PATTERN =
   /(429|500|502|503|504|rate.?limit|quota|overload|unavailable|gateway|timeout|timed.out|connection|reset|econn|enotfound|temporary|transient)/i;
@@ -31,14 +41,14 @@ function getStringProperty(value: unknown, key: string): string | undefined {
 export function getErrorMessage(error: unknown): string {
   const message = getStringProperty(error, 'message');
   if (message !== undefined) {
-    return message;
+    return sanitizeErrorMessage(message);
   }
 
   if (typeof error === 'string') {
-    return error;
+    return sanitizeErrorMessage(error);
   }
 
-  return inspect(error, { depth: 3, breakLength: 120 });
+  return sanitizeErrorMessage(inspect(error, { depth: 3, breakLength: 120 }));
 }
 
 const CANCELLED_ERROR_PATTERN = /cancelled|canceled/i;

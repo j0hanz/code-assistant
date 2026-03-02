@@ -1,7 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { getErrorMessage } from '../lib/errors.js';
-import { createNoFileError, getFile } from '../lib/file-store.js';
+import {
+  createNoFileError,
+  getFile,
+  validateFileBudget,
+} from '../lib/file-store.js';
 import {
   type CodeExecutionResponse,
   generateWithCodeExecution,
@@ -74,10 +78,18 @@ export function registerVerifyLogicTool(server: McpServer): void {
           return createNoFileError();
         }
 
-        const parsed = VerifyLogicInputSchema.parse(input);
-        const language = parsed.language ?? file.language;
+        // Snapshot file content once to avoid TOCTOU race
+        const { content: fileContent, filePath, language: fileLanguage } = file;
 
-        const prompt = `Language: ${language}\nFile: ${file.filePath}\n\nSource code:\n${file.content}\n\nVerification request: ${parsed.question}`;
+        const budgetError = validateFileBudget(fileContent);
+        if (budgetError) {
+          return budgetError;
+        }
+
+        const parsed = VerifyLogicInputSchema.parse(input);
+        const language = parsed.language ?? fileLanguage;
+
+        const prompt = `Language: ${language}\nFile: ${filePath}\n\nSource code:\n${fileContent}\n\nVerification request: ${parsed.question}`;
 
         try {
           const response = await generateWithCodeExecution({
@@ -93,7 +105,7 @@ export function registerVerifyLogicTool(server: McpServer): void {
             verified,
             codeBlocks: response.codeBlocks,
             executionResults: response.executionResults,
-            filePath: file.filePath,
+            filePath,
             language,
           });
 

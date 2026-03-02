@@ -1,10 +1,12 @@
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { lstat, readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import {
   createSearchStore,
+  deleteSearchStore,
+  getCurrentSearchStore,
   setCurrentSearchStore,
   uploadToSearchStore,
 } from '../lib/gemini/index.js';
@@ -72,6 +74,7 @@ const ALLOWED_EXTENSIONS = new Set([
 ]);
 
 const DENIED_SEGMENTS = new Set([
+  '.env',
   '.git',
   'node_modules',
   'dist',
@@ -145,8 +148,22 @@ async function collectFiles(
     const fullPath = path.join(currentPath, entry.name);
 
     if (entry.isDirectory()) {
+      // Skip symlinked directories to prevent symlink traversal attacks
+      try {
+        const entryStat = await lstat(fullPath);
+        if (entryStat.isSymbolicLink()) continue;
+      } catch {
+        continue;
+      }
       await collectFiles(rootPath, fullPath, result);
     } else if (entry.isFile() && isAllowedExtension(entry.name)) {
+      // Skip symlinked files
+      try {
+        const entryStat = await lstat(fullPath);
+        if (entryStat.isSymbolicLink()) continue;
+      } catch {
+        continue;
+      }
       const relativePath = path.relative(rootPath, fullPath);
       result.push({ absolutePath: fullPath, relativePath });
     }
@@ -236,6 +253,14 @@ export function registerIndexRepositoryTool(server: McpServer): void {
             undefined,
             VALIDATION_META
           );
+        }
+
+        // Clean up previous store (fire-and-forget)
+        const previousStore = getCurrentSearchStore();
+        if (previousStore) {
+          void deleteSearchStore(previousStore.storeName).catch(() => {
+            // Best-effort cleanup; errors are logged inside deleteSearchStore
+          });
         }
 
         // Create store

@@ -3,19 +3,19 @@ export interface CachedEnvInt {
   reset(): void;
 }
 
-function parsePositiveInteger(value: string): number | undefined {
+function parseNonNegativeInteger(value: string): number | undefined {
   const normalized = value.trim();
   if (normalized.length === 0) {
     return undefined;
   }
 
   const parsed = Number.parseInt(normalized, 10);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined;
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function resolveEnvInt(envVar: string, defaultValue: number): number {
   const envValue = process.env[envVar] ?? '';
-  return parsePositiveInteger(envValue) ?? defaultValue;
+  return parseNonNegativeInteger(envValue) ?? defaultValue;
 }
 
 /** Creates a cached integer value from an environment variable, with a default fallback. */
@@ -81,26 +81,8 @@ export const FLASH_HIGH_THINKING_LEVEL = THINKING_LEVELS.flashHigh;
 // Output token caps for various tools. Set to a high default to avoid cutting off important information, but can be adjusted as needed.
 const DEFAULT_OUTPUT_CAP = 65_536;
 
-/** Output cap for Flash API breaking-change detection. */
-export const FLASH_API_BREAKING_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash complexity analysis. */
-export const FLASH_COMPLEXITY_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash test-plan generation. */
-export const FLASH_TEST_PLAN_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash triage tools. */
-export const FLASH_TRIAGE_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash patch generation. */
-export const FLASH_PATCH_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash deep review findings. */
-export const FLASH_REVIEW_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
-
-/** Output cap for Flash refactoring analysis. */
-export const FLASH_REFACTOR_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
+/** Shared output token cap used by all tool categories. */
+export const DEFAULT_MAX_OUTPUT_TOKENS = DEFAULT_OUTPUT_CAP;
 
 // ---------------------------------------------------------------------------
 // Temperatures
