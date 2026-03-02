@@ -9,7 +9,6 @@ import { createCachedEnvInt } from '../config.js';
 // Lazy-cached: first call happens after parseCommandLineArgs() sets GEMINI_MODEL.
 let _defaultModel: string | undefined;
 export const DEFAULT_MODEL = 'gemini-3-flash-preview';
-export const MODEL_FALLBACK_TARGET = 'gemini-2.5-flash';
 const GEMINI_MODEL_ENV_VAR = 'GEMINI_MODEL';
 
 export function getDefaultModel(): string {
@@ -28,6 +27,8 @@ export function resetDefaultModelForTesting(): void {
 
 export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_TIMEOUT_MS = 90_000;
+export const DEFAULT_TOP_K = 40;
+export const DEFAULT_TOP_P = 0.95;
 export const CANCELLED_REQUEST_MESSAGE = 'Gemini request was cancelled.';
 const UNKNOWN_REQUEST_CONTEXT_VALUE_STR = 'unknown';
 export { UNKNOWN_REQUEST_CONTEXT_VALUE_STR as UNKNOWN_REQUEST_CONTEXT_VALUE };

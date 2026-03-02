@@ -6,6 +6,8 @@ export interface GeminiRequestExecutionOptions {
   maxRetries?: number;
   timeoutMs?: number;
   temperature?: number;
+  topK?: number;
+  topP?: number;
   maxOutputTokens?: number;
   thinkingLevel?: GeminiThinkingLevel;
   includeThoughts?: boolean;

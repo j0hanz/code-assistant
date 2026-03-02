@@ -21,8 +21,9 @@ import {
   CANCELLED_REQUEST_MESSAGE,
   concurrencyWaitMsConfig,
   DEFAULT_MAX_RETRIES,
-  DEFAULT_MODEL,
   DEFAULT_TIMEOUT_MS,
+  DEFAULT_TOP_K,
+  DEFAULT_TOP_P,
   getDefaultBatchMode,
   getDefaultIncludeThoughts,
   getDefaultModel,
@@ -31,11 +32,9 @@ import {
   getThinkingConfig,
   maxConcurrentBatchCallsConfig,
   maxConcurrentCallsConfig,
-  MODEL_FALLBACK_TARGET,
 } from './config.js';
 import {
   canRetryAttempt,
-  getNumericErrorCode,
   getRetryDelayMs,
   toUpperStringCode,
 } from './retry.js';
@@ -53,6 +52,11 @@ import type {
 
 const SLEEP_UNREF_OPTIONS = { ref: false } as const;
 const JSON_CODE_BLOCK_PATTERN = /```(?:json)?\n?([\s\S]*?)(?=\n?```)/u;
+const MAX_BATCH_POLL_RETRIES = 2;
+
+type GenerateContentResponse = Awaited<
+  ReturnType<GoogleGenAI['models']['generateContent']>
+>;
 
 // ---------------------------------------------------------------------------
 // Concurrency limiters
@@ -115,6 +119,8 @@ function buildGenerationConfig(
   );
   const config: GenerateContentConfig = {
     temperature: request.temperature ?? 1.0,
+    topK: request.topK ?? DEFAULT_TOP_K,
+    topP: request.topP ?? DEFAULT_TOP_P,
     maxOutputTokens: request.maxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS,
     safetySettings: getSafetySettings(getSafetyThreshold()),
     ...(abortSignal ? { abortSignal } : {}),
@@ -367,6 +373,32 @@ function extractCodeExecutionResponse(
 // Single-attempt execution
 // ---------------------------------------------------------------------------
 
+function handleExecutionResponse(
+  request: GeminiStructuredRequest,
+  response: GenerateContentResponse
+): unknown {
+  if (request.useCodeExecution) {
+    return extractCodeExecutionResponse(response);
+  }
+
+  if (request.useGrounding) {
+    return {
+      text: response.text,
+      groundingMetadata: response.candidates?.[0]?.groundingMetadata,
+    };
+  }
+
+  if (request.fileSearchStoreNames && request.fileSearchStoreNames.length > 0) {
+    const parts = (response.candidates?.[0]?.content?.parts ?? []) as unknown[];
+    return {
+      text: response.text ?? '',
+      parts,
+    };
+  }
+
+  return parseStructuredResponse(response.text);
+}
+
 async function executeAttempt(
   request: GeminiStructuredRequest,
   model: string,
@@ -400,26 +432,7 @@ async function executeAttempt(
     );
   }
 
-  if (request.useCodeExecution) {
-    return extractCodeExecutionResponse(response);
-  }
-
-  if (request.useGrounding) {
-    return {
-      text: response.text,
-      groundingMetadata: response.candidates?.[0]?.groundingMetadata,
-    };
-  }
-
-  if (request.fileSearchStoreNames && request.fileSearchStoreNames.length > 0) {
-    const parts = (response.candidates?.[0]?.content?.parts ?? []) as unknown[];
-    return {
-      text: response.text ?? '',
-      parts,
-    };
-  }
-
-  return parseStructuredResponse(response.text);
+  return handleExecutionResponse(request, response);
 }
 
 // ---------------------------------------------------------------------------
@@ -476,56 +489,6 @@ async function throwGeminiFailure(
   );
 }
 
-// ---------------------------------------------------------------------------
-// Model fallback
-// ---------------------------------------------------------------------------
-
-function shouldUseModelFallback(error: unknown, model: string): boolean {
-  return getNumericErrorCode(error) === 404 && model === DEFAULT_MODEL;
-}
-
-function omitThinkingLevel(
-  request: GeminiStructuredRequest
-): GeminiStructuredRequest {
-  const copy = { ...request };
-  Reflect.deleteProperty(copy, 'thinkingLevel');
-  return copy;
-}
-
-async function applyModelFallback(
-  request: GeminiStructuredRequest,
-  onLog: GeminiOnLog,
-  reason: string
-): Promise<{ model: string; request: GeminiStructuredRequest }> {
-  await emitGeminiLog(onLog, 'warning', {
-    event: 'gemini_model_fallback',
-    details: {
-      from: DEFAULT_MODEL,
-      to: MODEL_FALLBACK_TARGET,
-      reason,
-    },
-  });
-
-  return {
-    model: MODEL_FALLBACK_TARGET,
-    request: omitThinkingLevel(request),
-  };
-}
-
-async function tryApplyModelFallback(
-  error: unknown,
-  model: string,
-  request: GeminiStructuredRequest,
-  onLog: GeminiOnLog,
-  reason: string
-): Promise<{ model: string; request: GeminiStructuredRequest } | undefined> {
-  if (!shouldUseModelFallback(error, model)) {
-    return undefined;
-  }
-
-  return applyModelFallback(request, onLog, reason);
-}
-
 function countAttemptsMade(attempt: number): number {
   return attempt + 1;
 }
@@ -538,33 +501,12 @@ async function runWithRetries(
   onLog: GeminiOnLog
 ): Promise<unknown> {
   let lastError: unknown;
-  let currentModel = model;
-  let effectiveRequest: GeminiStructuredRequest = request;
 
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
-      return await executeAttempt(
-        effectiveRequest,
-        currentModel,
-        timeoutMs,
-        attempt,
-        onLog
-      );
+      return await executeAttempt(request, model, timeoutMs, attempt, onLog);
     } catch (error: unknown) {
       lastError = error;
-
-      const fallback = await tryApplyModelFallback(
-        error,
-        currentModel,
-        request,
-        onLog,
-        'Model not found (404)'
-      );
-      if (fallback) {
-        currentModel = fallback.model;
-        effectiveRequest = fallback.request;
-        continue;
-      }
 
       if (!canRetryAttempt(attempt, maxRetries, error)) {
         return throwGeminiFailure(countAttemptsMade(attempt), lastError, onLog);
@@ -712,13 +654,11 @@ async function pollBatchStatusWithRetries(
   onLog: GeminiOnLog,
   requestSignal?: AbortSignal
 ): Promise<unknown> {
-  const maxPollRetries = 2;
-
-  for (let attempt = 0; attempt <= maxPollRetries; attempt += 1) {
+  for (let attempt = 0; attempt <= MAX_BATCH_POLL_RETRIES; attempt += 1) {
     try {
       return await batches.get({ name: batchName });
     } catch (error: unknown) {
-      if (!canRetryAttempt(attempt, maxPollRetries, error)) {
+      if (!canRetryAttempt(attempt, MAX_BATCH_POLL_RETRIES, error)) {
         throw error;
       }
 
@@ -763,47 +703,21 @@ async function cancelBatchIfNeeded(
   }
 }
 
-async function createBatchJobWithFallback(
+async function createBatchJob(
   request: GeminiStructuredRequest,
   batches: NonNullable<BatchApiClient['batches']>,
-  model: string,
-  onLog: GeminiOnLog
+  model: string
 ): Promise<unknown> {
-  let currentModel = model;
-  let effectiveRequest: GeminiStructuredRequest = request;
-  const createSignal = request.signal;
-
-  for (let attempt = 0; attempt <= 1; attempt += 1) {
-    try {
-      const createPayload: Record<string, unknown> = {
-        model: currentModel,
-        src: [
-          {
-            contents: [
-              { role: 'user', parts: [{ text: effectiveRequest.prompt }] },
-            ],
-            config: buildGenerationConfig(effectiveRequest, createSignal),
-          },
-        ],
-      };
-      return await batches.create(createPayload);
-    } catch (error: unknown) {
-      if (attempt === 0 && shouldUseModelFallback(error, currentModel)) {
-        const fallback = await applyModelFallback(
-          request,
-          onLog,
-          'Model not found (404) during batch create'
-        );
-        currentModel = fallback.model;
-        effectiveRequest = fallback.request;
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw new Error(
-    'Unexpected state: batch creation loop exited without returning or throwing.'
-  );
+  const createPayload: Record<string, unknown> = {
+    model,
+    src: [
+      {
+        contents: [{ role: 'user', parts: [{ text: request.prompt }] }],
+        config: buildGenerationConfig(request, request.signal),
+      },
+    ],
+  };
+  return await batches.create(createPayload);
 }
 
 async function pollBatchForCompletion(
@@ -864,12 +778,7 @@ async function runInlineBatchWithPolling(
   let timedOut = false;
 
   try {
-    const createdJob = await createBatchJobWithFallback(
-      request,
-      batches,
-      model,
-      onLog
-    );
+    const createdJob = await createBatchJob(request, batches, model);
     const createdRecord = toRecord(createdJob);
     batchName =
       typeof createdRecord?.name === 'string' ? createdRecord.name : undefined;
