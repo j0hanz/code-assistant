@@ -1,4 +1,5 @@
 import { getErrorMessage } from './errors.js';
+import type { ToolContentBlock } from './tool-response.js';
 import type { createErrorToolResponse } from './tools.js';
 
 // Named progress step indices for 7-step progress (0–6).
@@ -186,7 +187,8 @@ function tryParseErrorMessage(text: string): string | undefined {
 export function extractValidationMessage(
   validationError: ReturnType<typeof createErrorToolResponse>
 ): string {
-  const text = validationError.content.at(0)?.text;
+  const first = validationError.content.at(0);
+  const text = first && 'text' in first ? first.text : undefined;
   if (!text) return INPUT_VALIDATION_FAILED;
 
   return tryParseErrorMessage(text) ?? INPUT_VALIDATION_FAILED;
@@ -262,7 +264,7 @@ export interface TaskStatusReporter {
   updateStatus: (message: string) => Promise<void>;
   storeResult?: (
     status: 'completed' | 'failed',
-    result: { isError?: boolean; content: { type: string; text: string }[] }
+    result: { isError?: boolean; content: ToolContentBlock[] }
   ) => Promise<void>;
   reportCancellation?: (message: string) => Promise<void>;
 }
@@ -294,7 +296,7 @@ export class RunReporter {
 
   async storeResultSafely(
     status: 'completed' | 'failed',
-    result: { isError?: boolean; content: { type: string; text: string }[] },
+    result: { isError?: boolean; content: ToolContentBlock[] },
     onLog: (level: string, data: unknown) => Promise<void>
   ): Promise<void> {
     if (!this.statusReporter.storeResult) {

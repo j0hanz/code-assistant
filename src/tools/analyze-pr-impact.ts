@@ -47,7 +47,37 @@ export function registerAnalyzePrImpactTool(server: McpServer): void {
     requiresDiff: true,
     progressContext: (input) => input.repository,
     formatOutcome: (result) => `severity: ${result.severity}`,
-    formatOutput: (result) => `[${result.severity}] ${result.summary}`,
+    formatOutput: (result) => {
+      const lines = [
+        `**Severity:** ${result.severity}`,
+        `**Rollback Complexity:** ${result.rollbackComplexity}`,
+        '',
+        result.summary,
+      ];
+
+      if (result.categories.length > 0) {
+        lines.push('', '### Categories', '');
+        for (const c of result.categories) {
+          lines.push(`- ${c}`);
+        }
+      }
+
+      if (result.affectedAreas.length > 0) {
+        lines.push('', '### Affected Areas', '');
+        for (const a of result.affectedAreas) {
+          lines.push(`- ${a}`);
+        }
+      }
+
+      if (result.breakingChanges.length > 0) {
+        lines.push('', '### Breaking Changes', '');
+        for (const bc of result.breakingChanges) {
+          lines.push(`- ${bc}`);
+        }
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const { diff, parsedFiles } = getDiffContextSnapshot(ctx);
       const { stats, summary: fileSummary } =

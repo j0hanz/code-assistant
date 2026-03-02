@@ -46,7 +46,20 @@ export function registerAskTool(server: McpServer): void {
     requiresFile: true,
     progressContext: (input) => input.question.slice(0, 60),
     formatOutcome: (result) => `confidence: ${result.confidence}`,
-    formatOutput: (result) => result.answer,
+    formatOutput: (result) => {
+      const lines = [result.answer];
+
+      if (result.codeReferences.length > 0) {
+        lines.push('', '### References', '');
+        for (const ref of result.codeReferences) {
+          lines.push(`- **${ref.target}**: ${ref.explanation}`);
+        }
+      }
+
+      lines.push('', `*Confidence: ${result.confidence}*`);
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const file = getFileContextSnapshot(ctx);
       const language = input.language ?? file.language;

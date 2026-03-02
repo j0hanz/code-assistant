@@ -156,13 +156,17 @@ describe('tool-response', () => {
 
     assert.deepEqual(response.structuredContent, structured);
     assert.equal(response.content[0]?.type, 'text');
-    assert.deepEqual(JSON.parse(response.content[0]?.text ?? '{}'), structured);
+    const first = response.content[0];
+    assert.ok(first && 'text' in first);
+    assert.deepEqual(JSON.parse(first.text), structured);
   });
 
   it('allows custom text content for success responses', () => {
     const structured = { ok: true, result: { count: 1 } };
     const response = createToolResponse(structured, 'custom');
-    assert.equal(response.content[0]?.text, 'custom');
+    const first = response.content[0];
+    assert.ok(first && 'text' in first);
+    assert.equal(first.text, 'custom');
   });
 
   it('creates error response payload with metadata and isError flag', () => {
@@ -174,7 +178,9 @@ describe('tool-response', () => {
     );
 
     assert.equal(response.isError, true);
-    const parsed = JSON.parse(response.content[0]?.text ?? '{}') as {
+    const first = response.content[0];
+    assert.ok(first && 'text' in first);
+    const parsed = JSON.parse(first.text) as {
       ok: boolean;
       error?: {
         code: string;

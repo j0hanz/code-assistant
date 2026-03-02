@@ -111,7 +111,19 @@ export function registerQueryRepositoryTool(server: McpServer): void {
         destructiveHint: false,
       },
       progressContext: (input) => input.query.slice(0, 60),
-      formatOutput: (result) => result.answer,
+      formatOutput: (result) => {
+        const lines = [result.answer];
+
+        if (result.sources.length > 0) {
+          lines.push('', '### Sources', '');
+          for (const s of result.sources) {
+            const label = s.title ?? s.fileSearchStore ?? 'source';
+            lines.push(`- ${label}`);
+          }
+        }
+
+        return lines.join('\n');
+      },
       validateInput: () => {
         const store = getCurrentSearchStore();
         if (!store) {

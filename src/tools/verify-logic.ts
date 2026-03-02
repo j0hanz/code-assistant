@@ -78,8 +78,26 @@ export function registerVerifyLogicTool(server: McpServer): void {
     progressContext: (input) => input.question.slice(0, 60),
     formatOutcome: (result) =>
       `verified: ${String(result.verified)} | ${result.codeBlocks.length} block(s)`,
-    formatOutput: (result) =>
-      `verified: ${String(result.verified)} | ${result.codeBlocks.length} code block(s), ${result.executionResults.length} execution(s)`,
+    formatOutput: (result) => {
+      const status = result.verified ? 'Verified' : 'Failed';
+      const lines = [`**Status:** ${status}`, '', result.answer];
+
+      if (result.codeBlocks.length > 0) {
+        lines.push('', '### Code', '');
+        for (const cb of result.codeBlocks) {
+          lines.push(`\`\`\`${cb.language}`, cb.code, '```', '');
+        }
+      }
+
+      if (result.executionResults.length > 0) {
+        lines.push('### Execution Results', '');
+        for (const er of result.executionResults) {
+          lines.push(`- **${er.outcome}**${er.output ? `: ${er.output}` : ''}`);
+        }
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const {
         filePath,

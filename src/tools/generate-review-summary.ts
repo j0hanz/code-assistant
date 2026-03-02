@@ -61,8 +61,23 @@ export function registerGenerateReviewSummaryTool(server: McpServer): void {
         },
       };
     },
-    formatOutput: (result) =>
-      `${result.summary}\nRecommendation: ${result.recommendation}`,
+    formatOutput: (result) => {
+      const lines = [
+        `**Risk:** ${result.overallRisk}`,
+        `**Recommendation:** ${result.recommendation}`,
+        '',
+        result.summary,
+      ];
+
+      if (result.keyChanges.length > 0) {
+        lines.push('', '### Key Changes', '');
+        for (const kc of result.keyChanges) {
+          lines.push(`- ${kc}`);
+        }
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input: GenerateReviewSummaryInput, ctx) => {
       const { diff, stats } = getDiffContextSnapshot(ctx);
       const languageSegment = formatLanguageSegment(input.language);

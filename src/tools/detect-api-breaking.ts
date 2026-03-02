@@ -45,10 +45,29 @@ export function registerDetectApiBreakingTool(server: McpServer): void {
     progressContext: (input) => input.language ?? 'auto-detect',
     formatOutcome: (result) =>
       `${result.breakingChanges.length} breaking change(s) found`,
-    formatOutput: (result) =>
-      result.hasBreakingChanges
-        ? `${result.breakingChanges.length} breaking changes found.`
-        : 'No breaking changes.',
+    formatOutput: (result) => {
+      if (!result.hasBreakingChanges) {
+        return 'No breaking changes detected.';
+      }
+
+      const lines = [
+        `**${String(result.breakingChanges.length)} breaking change(s) detected**`,
+        '',
+      ];
+
+      for (const bc of result.breakingChanges) {
+        lines.push(
+          `#### ${bc.element}`,
+          '',
+          `- **Change:** ${bc.natureOfChange}`,
+          `- **Impact:** ${bc.consumerImpact}`,
+          `- **Mitigation:** ${bc.suggestedMitigation}`,
+          ''
+        );
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const { diff } = getDiffContextSnapshot(ctx);
 

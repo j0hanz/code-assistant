@@ -81,7 +81,19 @@ export function registerRefactorCodeTool(server: McpServer): void {
         result.groupingIssuesCount;
       return `${total} suggestion${total === 1 ? '' : 's'}`;
     },
-    formatOutput: (result) => result.summary,
+    formatOutput: (result) => {
+      const lines = [result.summary];
+
+      if (result.suggestions.length > 0) {
+        lines.push('', '### Suggestions', '');
+        for (const s of result.suggestions) {
+          lines.push(`- **[${s.category}]** \`${s.target}\` (${s.priority})  `);
+          lines.push(`  ${s.currentIssue} — ${s.suggestion}`);
+        }
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const file = getFileContextSnapshot(ctx);
       const language = input.language ?? file.language;

@@ -45,8 +45,25 @@ export function registerGenerateTestPlanTool(server: McpServer): void {
     requiresDiff: true,
     progressContext: (input) => input.repository,
     formatOutcome: (result) => `${result.testCases.length} test cases`,
-    formatOutput: (result) =>
-      `${result.summary}\n${result.testCases.length} test cases.`,
+    formatOutput: (result) => {
+      const lines = [
+        result.summary,
+        '',
+        `### Test Cases (${String(result.testCases.length)})`,
+        '',
+      ];
+
+      for (const tc of result.testCases) {
+        lines.push(`- **${tc.name}** \`${tc.type}\` (${tc.priority})  `);
+        lines.push(`  ${tc.description}`);
+      }
+
+      if (result.coverageSummary) {
+        lines.push('', '### Coverage', '', result.coverageSummary);
+      }
+
+      return lines.join('\n');
+    },
     transformResult: (input, result) => {
       const cappedTestCases = result.testCases.slice(
         0,

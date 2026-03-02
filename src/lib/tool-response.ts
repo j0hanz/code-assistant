@@ -24,6 +24,17 @@ interface ToolTextContent {
   text: string;
 }
 
+interface ToolEmbeddedResource {
+  type: 'resource';
+  resource: {
+    uri: string;
+    mimeType: string;
+    text: string;
+  };
+}
+
+export type ToolContentBlock = ToolTextContent | ToolEmbeddedResource;
+
 interface ToolStructuredContent {
   [key: string]: unknown;
   ok: boolean;
@@ -33,13 +44,13 @@ interface ToolStructuredContent {
 
 interface ToolResponse<TStructuredContent extends ToolStructuredContent> {
   [key: string]: unknown;
-  content: ToolTextContent[];
+  content: ToolContentBlock[];
   structuredContent: TStructuredContent;
 }
 
 interface ErrorToolResponse {
   [key: string]: unknown;
-  content: ToolTextContent[];
+  content: ToolContentBlock[];
   isError: true;
 }
 
@@ -62,12 +73,25 @@ function createToolError(
   return error;
 }
 
-function toTextContent(
+function toContentBlocks(
   structured: ToolStructuredContent,
   textContent?: string
-): ToolTextContent[] {
+): ToolContentBlock[] {
   const text = textContent ?? JSON.stringify(structured);
-  return [{ type: 'text', text }];
+  const blocks: ToolContentBlock[] = [{ type: 'text', text }];
+
+  if (textContent) {
+    blocks.push({
+      type: 'resource',
+      resource: {
+        uri: 'internal://preview/result.md',
+        mimeType: 'text/markdown',
+        text: textContent,
+      },
+    });
+  }
+
+  return blocks;
 }
 
 function createErrorStructuredContent(
@@ -92,7 +116,7 @@ export function createToolResponse<
   textContent?: string
 ): ToolResponse<TStructuredContent> {
   return {
-    content: toTextContent(structured, textContent),
+    content: toContentBlocks(structured, textContent),
     structuredContent: structured,
   };
 }
@@ -105,7 +129,7 @@ export function createErrorToolResponse(
 ): ErrorToolResponse {
   const structured = createErrorStructuredContent(code, message, result, meta);
   return {
-    content: toTextContent(structured),
+    content: toContentBlocks(structured),
     isError: true,
   };
 }

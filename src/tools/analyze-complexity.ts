@@ -48,8 +48,27 @@ export function registerAnalyzeComplexityTool(server: McpServer): void {
       result.isDegradation
         ? 'Performance degradation detected'
         : 'No degradation',
-    formatOutput: (result) =>
-      `Time=${result.timeComplexity}, Space=${result.spaceComplexity}. ${result.explanation}`,
+    formatOutput: (result) => {
+      const lines = [
+        `**Time Complexity:** ${result.timeComplexity}`,
+        `**Space Complexity:** ${result.spaceComplexity}`,
+        '',
+        result.explanation,
+      ];
+
+      if (result.potentialBottlenecks.length > 0) {
+        lines.push('', '### Potential Bottlenecks', '');
+        for (const b of result.potentialBottlenecks) {
+          lines.push(`- ${b}`);
+        }
+      }
+
+      if (result.isDegradation) {
+        lines.push('', '> **Warning:** Performance degradation detected.');
+      }
+
+      return lines.join('\n');
+    },
     buildPrompt: (input, ctx) => {
       const { diff } = getDiffContextSnapshot(ctx);
 

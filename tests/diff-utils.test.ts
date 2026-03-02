@@ -63,7 +63,9 @@ describe('diff budget', () => {
       assert.ok(error);
       assert.equal(error.isError, true);
 
-      const parsed = JSON.parse(error.content[0]?.text ?? '{}') as {
+      const first = error.content[0];
+      assert.ok(first && 'text' in first);
+      const parsed = JSON.parse(first.text) as {
         ok: boolean;
         error?: {
           code: string;

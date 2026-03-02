@@ -36,7 +36,7 @@ function createMockReporter(): {
       },
       storeResult: async (
         status: 'completed' | 'failed',
-        result: { isError?: boolean; content: { type: string; text: string }[] }
+        result: { isError?: boolean }
       ) => {
         calls.storeResult.push({ status, isError: result.isError === true });
       },
