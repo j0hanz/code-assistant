@@ -113,7 +113,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.ver.outputs.version }}
-        run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes --clobber
+        run: |
+          if gh release view "v$VERSION" &>/dev/null; then
+            echo "::notice::Release v$VERSION already exists — skipped"
+          else
+            gh release create "v$VERSION" --title "v$VERSION" --generate-notes
+          fi
 
   # ──────────────────────────────────────────────
   # 2. Publish to npm (runs in parallel with Docker)
