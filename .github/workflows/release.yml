@@ -55,6 +55,7 @@ jobs:
           CURRENT=$(node -p "require('./package.json').version")
           if [ -n "${{ inputs.custom_version }}" ]; then
             NEW="${{ inputs.custom_version }}"
+            NEW="${NEW#v}"  # strip accidental leading v
           else
             IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
             case "${{ inputs.bump }}" in
