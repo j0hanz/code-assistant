@@ -1,6 +1,6 @@
 {
   "name": "@j0hanz/code-assistant",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "mcpName": "io.github.j0hanz/code-assistant",
   "description": "Gemini-powered MCP server for code analysis.",
   "type": "module",
