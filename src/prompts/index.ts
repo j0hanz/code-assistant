@@ -13,16 +13,19 @@ export const PROMPT_DEFINITIONS = [
   {
     name: 'get-help',
     title: 'Get Help',
-    description: 'Server instructions.',
+    description:
+      'Returns full server instructions: capabilities, tools, resources, constraints, and task lifecycle.',
   },
   {
     name: 'review-guide',
     title: 'Review Guide',
-    description: 'Workflow guide for tool/focus area.',
+    description:
+      'Returns a workflow guide for a specific tool and focus area. Supports auto-completion.',
   },
 ] as const;
 
 const TOOLS = getToolContractNames();
+const DEFAULT_TOOL_NAME = TOOLS[0] ?? 'analyze_pr_impact';
 
 type FocusArea = (typeof INSPECTION_FOCUS_AREAS)[number];
 const TOOL_DESCRIPTION_TEXT = 'Select tool for review guide.';
@@ -42,7 +45,17 @@ function isFocusArea(value: string): value is FocusArea {
   return INSPECTION_FOCUS_AREAS.includes(value as FocusArea);
 }
 
-function completeByPrefix<T extends string>(
+export function findPromptDef(
+  name: string
+): (typeof PROMPT_DEFINITIONS)[number] {
+  const def = PROMPT_DEFINITIONS.find((d) => d.name === name);
+  if (!def) {
+    throw new Error(`Unknown prompt definition: ${name}`);
+  }
+  return def;
+}
+
+export function completeByPrefix<T extends string>(
   values: readonly T[],
   prefix: string
 ): T[] {
@@ -71,11 +84,10 @@ function buildToolModelLine(contract: {
   return `Model: ${contract.model} (output cap ${contract.maxOutputTokens}).`;
 }
 
-function createPromptResponse(
+export function createPromptResponse(
   description: string,
   text: string
 ): {
-  [x: string]: unknown;
   description: string;
   messages: {
     role: 'user';
@@ -93,14 +105,14 @@ function createPromptResponse(
   };
 }
 
-function getFocusAreaGuide(focusArea: string): string {
+export function getFocusAreaGuide(focusArea: string): string {
   return isFocusArea(focusArea)
     ? FOCUS_AREA_GUIDES[focusArea]
     : `Focus on ${focusArea} concerns.`;
 }
 
 function registerHelpPrompt(server: McpServer, instructions: string): void {
-  const def = PROMPT_DEFINITIONS[0];
+  const def = findPromptDef('get-help');
   server.registerPrompt(
     def.name,
     {
@@ -111,7 +123,7 @@ function registerHelpPrompt(server: McpServer, instructions: string): void {
   );
 }
 
-function buildReviewGuideText(tool: string, focusArea: string): string {
+export function buildReviewGuideText(tool: string, focusArea: string): string {
   const toolCode = toInlineCode(tool);
 
   return (
@@ -122,7 +134,7 @@ function buildReviewGuideText(tool: string, focusArea: string): string {
 }
 
 function registerReviewGuidePrompt(server: McpServer): void {
-  const def = PROMPT_DEFINITIONS[1];
+  const def = findPromptDef('review-guide');
   server.registerPrompt(
     def.name,
     {
@@ -130,17 +142,17 @@ function registerReviewGuidePrompt(server: McpServer): void {
       description: def.description,
       argsSchema: {
         tool: completable(
-          z.string().optional().describe(TOOL_DESCRIPTION_TEXT),
+          z.string().max(128).optional().describe(TOOL_DESCRIPTION_TEXT),
           (value) => completeByPrefix(TOOLS, value ?? '')
         ),
         focusArea: completable(
-          z.string().optional().describe(FOCUS_DESCRIPTION_TEXT),
+          z.string().max(128).optional().describe(FOCUS_DESCRIPTION_TEXT),
           (value) => completeByPrefix(INSPECTION_FOCUS_AREAS, value ?? '')
         ),
       },
     },
     (args) => {
-      const selectedTool = args.tool ?? TOOLS[0] ?? 'analyze_pr_impact';
+      const selectedTool = args.tool ?? DEFAULT_TOOL_NAME;
       const selectedFocus = args.focusArea ?? INSPECTION_FOCUS_AREAS[0];
       return createPromptResponse(
         `Code review guide: ${selectedTool} / ${selectedFocus}`,
