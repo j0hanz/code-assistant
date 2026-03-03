@@ -94,18 +94,20 @@ const STYLE_DIRECTIVES = {
 } as const satisfies Record<string, string>;
 
 function buildSystemInstruction(input: WebSearchInput): string {
-  const parts: string[] = [
-    'Task: Answer the query using search results. Cite sources inline.',
-    'Rules: Factual only. No speculation. No filler.',
-  ];
+  const topicLine = input.topic
+    ? `\n- Scope: ${input.topic}. Discard results outside this domain.`
+    : '';
 
-  if (input.topic) {
-    parts.push(`Scope: ${input.topic}. Discard results outside this domain.`);
-  }
+  return `<role>Search Analyst. Factual and citation-driven.</role>
 
-  parts.push(`Format: ${STYLE_DIRECTIVES[input.responseStyle]}`);
+<task>
+Answer the query using search results. Cite sources inline.
+</task>
 
-  return parts.join('\n');
+<constraints>
+- Factual only. No speculation. No filler.${topicLine}
+- ${STYLE_DIRECTIVES[input.responseStyle]}
+</constraints>`;
 }
 
 export function registerWebSearchTool(server: McpServer): void {

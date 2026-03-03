@@ -24,6 +24,7 @@ Generate a prioritized test plan for the provided diff:
 </task>
 
 <constraints>
+- Generate tests ONLY for code paths directly modified or affected by the diff. Do not generate tests for unchanged or unrelated functions.
 - Focus on observable behavior changes.
 - Ignore internal refactors that do not affect contract.
 </constraints>

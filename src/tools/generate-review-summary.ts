@@ -27,7 +27,7 @@ You are a pragmatic engineer focused on stability and maintainability.
 Summarize the pull request based on the diff:
 - Assess overall risk (low/medium/high).
 - Highlight key logic/behavior changes.
-- Recommend action: merge, squash, or block.
+- Recommend action: merge, request changes, or block.
 </task>
 
 <constraints>

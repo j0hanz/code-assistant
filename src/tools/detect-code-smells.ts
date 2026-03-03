@@ -29,6 +29,8 @@ Analyze one source file for structural code smells: dead_code, magic_number, lon
 <constraints>
 - Focus on structural/design smells only. Do NOT report style/formatting issues.
 - Do NOT overlap with refactor_code findings (naming, duplication, grouping). Focus on smells that indicate deeper design problems.
+- Only report smells from the types listed in <task>. Do not invent new smell types.
+- If a code section is borderline, err on the side of not reporting it.
 - Every smell must reference a concrete symbol, block, or line range in the file.
 - Severity: info = minor/cosmetic, warning = should fix, error = significant design problem.
 - overallHealth: healthy = 0 warnings/errors, needs_attention = some warnings, unhealthy = any error-level smell.

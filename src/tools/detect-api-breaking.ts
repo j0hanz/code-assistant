@@ -23,8 +23,9 @@ Detect breaking changes in public APIs, interfaces, or schemas:
 </task>
 
 <constraints>
-- Definition: Breaking change = backwards-incompatible modification.
-- Ignore internal/private APIs unless exported.
+- Definition: Breaking change = backwards-incompatible modification to an explicitly exported (public) symbol.
+- Only analyze symbols that are explicitly exported. Internal refactors of non-exported code are never breaking changes.
+- If no breaking changes exist, set hasBreakingChanges to false and return an empty breakingChanges array.
 </constraints>
 
 <output>

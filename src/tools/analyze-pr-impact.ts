@@ -20,9 +20,9 @@ You are a strict, objective auditor of code changes.
 <task>
 Analyze the unified diff to assess:
 - Severity (low/medium/high/critical)
-- Risk categories (security, stability, etc.)
+- Risk categories: breaking_change, api_change, schema_change, config_change, dependency_update, security_fix, deprecation, performance_change, bug_fix, feature_addition. Only use these categories.
 - Breaking changes (API, contract, schema)
-- Rollback complexity
+- Rollback complexity (trivial/moderate/complex/irreversible)
 </task>
 
 <constraints>

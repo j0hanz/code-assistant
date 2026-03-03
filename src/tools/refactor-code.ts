@@ -36,6 +36,7 @@ Focus: complexity and duplication. Only report naming/grouping if high-impact.
 - Grouping: only report when related items are split by 50+ lines of unrelated code.
 - If no valid issues exist, return empty suggestions array and a 1-sentence summary.
 - Keep summary to 1-3 sentences. Keep currentIssue and suggestion to 1-2 sentences each.
+- Only report issues that meaningfully degrade readability, performance, or correctness. Minor style preferences (e.g., short variable names in small scopes, subjective naming) are not valid findings.
 </constraints>
 
 <output>

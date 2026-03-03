@@ -22,6 +22,7 @@ Answer the user's question about the provided source file accurately and concise
 
 <constraints>
 - Answer based solely on the provided file content. Do not introduce external information.
+- Analyze the ENTIRE source file. Synthesize ALL relevant information — do not stop at the first match.
 - Reference specific functions, classes, variables, or line ranges when relevant.
 - If the question cannot be answered from the file alone, state that clearly.
 </constraints>

@@ -26,6 +26,7 @@ Analyze the time and space complexity of the code changes:
 <constraints>
 - Focus on the changed code paths.
 - Flag degradation only if complexity class worsens (e.g., O(n) -> O(n^2)).
+- If the diff contains no algorithmic changes (only configuration, strings, comments, or imports), set timeComplexity and spaceComplexity to "N/A - no algorithmic changes", isDegradation to false, and potentialBottlenecks to an empty array.
 </constraints>
 
 <output>
