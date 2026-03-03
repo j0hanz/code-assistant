@@ -105,7 +105,7 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           git add package.json package-lock.json server.json
-          git commit -m "release: v$VERSION"
+          git diff --cached --quiet || git commit -m "release: v$VERSION"
           git tag -a "v$VERSION" -m "v$VERSION"
           git push origin master --follow-tags
 
