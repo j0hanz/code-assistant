@@ -14,7 +14,7 @@ const SENSITIVE_PATTERNS: RegExp[] = [
 ];
 
 /** Remove sensitive credentials from a string before it reaches clients. */
-export function sanitizeErrorMessage(message: string): string {
+function sanitizeErrorMessage(message: string): string {
   let sanitized = message;
   for (const pattern of SENSITIVE_PATTERNS) {
     pattern.lastIndex = 0;
@@ -65,8 +65,6 @@ const TIMEOUT_ERROR_PATTERN = /timed out|timeout/i;
 const BUDGET_ERROR_PATTERN = /exceeds limit|max allowed size|input too large/i;
 const BUSY_ERROR_PATTERN = /too many concurrent/i;
 const VALIDATION_ERROR_PATTERN = /validation/i;
-
-export { CANCELLED_ERROR_PATTERN };
 
 const ERROR_CLASSIFIERS: { pattern: RegExp; meta: ErrorMeta }[] = [
   {

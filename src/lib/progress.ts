@@ -9,9 +9,9 @@ export const STEP_BUILDING_PROMPT = 2;
 export const STEP_CALLING_MODEL = 3;
 export const STEP_VALIDATING_RESPONSE = 4;
 export const STEP_FINALIZING = 5;
-export const TASK_PROGRESS_TOTAL = STEP_FINALIZING + 1;
+const TASK_PROGRESS_TOTAL = STEP_FINALIZING + 1;
 
-export const INPUT_VALIDATION_FAILED = 'Input validation failed';
+const INPUT_VALIDATION_FAILED = 'Input validation failed';
 export const DEFAULT_PROGRESS_CONTEXT = 'request';
 
 type ProgressToken = string | number;
@@ -143,7 +143,7 @@ export function normalizeProgressContext(context: string | undefined): string {
   return `${compact.slice(0, 77)}...`;
 }
 
-export function formatProgressStep(
+function formatProgressStep(
   toolName: string,
   context: string,
   metadata: string
@@ -151,7 +151,7 @@ export function formatProgressStep(
   return formatProgressMessage(toolName, context, metadata);
 }
 
-export function formatProgressCompletion(
+function formatProgressCompletion(
   toolName: string,
   context: string,
   outcome: string
@@ -224,7 +224,7 @@ export async function sendSingleStepProgress(
   });
 }
 
-export async function reportProgressStepUpdate(
+async function reportProgressStepUpdate(
   reportProgress: (payload: ProgressPayload) => Promise<void>,
   toolName: string,
   context: string,
@@ -238,7 +238,7 @@ export async function reportProgressStepUpdate(
   });
 }
 
-export async function reportProgressCompletionUpdate(
+async function reportProgressCompletionUpdate(
   reportProgress: (payload: ProgressPayload) => Promise<void>,
   toolName: string,
   context: string,
@@ -251,7 +251,7 @@ export async function reportProgressCompletionUpdate(
   });
 }
 
-export async function reportSchemaRetryProgressBestEffort(
+async function reportSchemaRetryProgressBestEffort(
   reportProgress: (payload: ProgressPayload) => Promise<void>,
   toolName: string,
   context: string,
