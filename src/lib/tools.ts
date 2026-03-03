@@ -824,7 +824,7 @@ function hasTaskStatusUpdate(
   return 'updateTaskStatus' in store;
 }
 
-// Adapter to convert MCP task handler extra into progress reporter extra, which currently only differs by the presence of updateTaskStatus.
+// Utility function to read a file as UTF-8 text with consistent error handling.
 function toProgressExtra(extra: CreateTaskRequestHandlerExtra): ProgressExtra {
   return extra as unknown as ProgressExtra;
 }

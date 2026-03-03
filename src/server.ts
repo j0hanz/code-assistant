@@ -5,9 +5,9 @@ import { InMemoryTaskStore } from '@modelcontextprotocol/sdk/experimental/tasks/
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 
-import { initDiffStore } from './lib/diff.js';
+import { disposeDiffStore, initDiffStore } from './lib/diff.js';
 import { getErrorMessage } from './lib/errors.js';
-import { initFileStore } from './lib/file-store.js';
+import { disposeFileStore, initFileStore } from './lib/file-store.js';
 
 import { registerAllPrompts } from './prompts/index.js';
 import { registerAllResources } from './resources/index.js';
@@ -120,6 +120,8 @@ export function createServer(): ServerHandle {
     try {
       await server.close();
     } finally {
+      disposeDiffStore();
+      disposeFileStore();
       taskStore.cleanup();
     }
   };

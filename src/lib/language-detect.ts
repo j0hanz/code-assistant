@@ -46,6 +46,10 @@ export const EXTENSION_LANGUAGE_MAP: ReadonlyMap<string, string> = new Map([
   ['.zig', 'Zig'],
   ['.vue', 'Vue'],
   ['.svelte', 'Svelte'],
+  ['.astro', 'Astro'],
+  ['.graphql', 'GraphQL'],
+  ['.proto', 'Protocol Buffers'],
+  ['.ps1', 'PowerShell'],
 ]);
 
 export function detectLanguage(filePath: string): string {

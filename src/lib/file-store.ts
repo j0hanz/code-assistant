@@ -70,6 +70,7 @@ type SendResourceUpdated = (params: { uri: string }) => Promise<void>;
 
 let currentSlot: FileSlot | undefined;
 let sendResourceUpdated: SendResourceUpdated | undefined;
+let cleanupTimer: NodeJS.Timeout | undefined;
 
 function notifyFileUpdated(): void {
   void sendResourceUpdated?.({ uri: SOURCE_RESOURCE_URI }).catch(() => {
@@ -81,7 +82,7 @@ function notifyFileUpdated(): void {
 export function initFileStore(server: McpServer): void {
   sendResourceUpdated = (params) => server.server.sendResourceUpdated(params);
 
-  startCleanupTimer(() => {
+  cleanupTimer = startCleanupTimer(() => {
     if (
       currentSlot &&
       performance.now() - currentSlot.cachedAt > fileCacheTtlMs.get()
@@ -89,6 +90,13 @@ export function initFileStore(server: McpServer): void {
       currentSlot = undefined;
     }
   });
+}
+
+export function disposeFileStore(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = undefined;
+  }
 }
 
 export function storeFile(slot: FileSlot): void {

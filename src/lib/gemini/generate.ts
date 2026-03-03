@@ -794,6 +794,14 @@ async function runInlineBatchWithPolling(
       'Batch mode requires SDK batch support, but batches API is unavailable.'
     );
   }
+  if (
+    typeof batches.create !== 'function' ||
+    typeof batches.get !== 'function'
+  ) {
+    throw new Error(
+      'Batch API shape mismatch: expected batches.create and batches.get to be functions.'
+    );
+  }
 
   let batchName: string | undefined;
   let completed = false;

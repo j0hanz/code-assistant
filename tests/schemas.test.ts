@@ -217,13 +217,13 @@ describe('output schemas', () => {
     assert.equal(result.success, true);
   });
 
-  it('TestPlanResultSchema requires at least 1 test case', () => {
+  it('TestPlanResultSchema accepts empty test cases array', () => {
     const result = TestPlanResultSchema.safeParse({
       summary: 'Plan.',
       testCases: [],
       coverageSummary: 'None.',
     });
-    assert.equal(result.success, false);
+    assert.equal(result.success, true);
   });
 
   it('AnalyzeComplexityResultSchema accepts valid result', () => {

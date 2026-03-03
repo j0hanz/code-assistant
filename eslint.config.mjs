@@ -31,7 +31,7 @@ export default defineConfig(
       tseslint.configs.stylisticTypeChecked,
     ],
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       parserOptions: {
         project: ['./tsconfig.json'],

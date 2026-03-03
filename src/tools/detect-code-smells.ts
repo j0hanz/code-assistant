@@ -121,14 +121,22 @@ export function registerDetectCodeSmellsTool(server: McpServer): void {
     transformResult: (_input, result, ctx) => {
       const file = getFileContextSnapshot(ctx);
 
+      let infoCount = 0;
+      let warningCount = 0;
+      let errorCount = 0;
+      for (const s of result.smells) {
+        if (s.severity === 'info') infoCount++;
+        else if (s.severity === 'warning') warningCount++;
+        else errorCount++;
+      }
+
       return {
         ...result,
         filePath: file.filePath,
         language: file.language,
-        infoCount: result.smells.filter((s) => s.severity === 'info').length,
-        warningCount: result.smells.filter((s) => s.severity === 'warning')
-          .length,
-        errorCount: result.smells.filter((s) => s.severity === 'error').length,
+        infoCount,
+        warningCount,
+        errorCount,
       };
     },
   });

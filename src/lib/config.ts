@@ -44,9 +44,10 @@ export function createCachedEnvInt(
 export const CLEANUP_INTERVAL_MS = 10 * 60 * 1_000;
 
 /** Starts a non-blocking interval that runs {@link callback} every {@link CLEANUP_INTERVAL_MS}. */
-export function startCleanupTimer(callback: () => void): void {
+export function startCleanupTimer(callback: () => void): NodeJS.Timeout {
   const timer = setInterval(callback, CLEANUP_INTERVAL_MS);
   timer.unref();
+  return timer;
 }
 
 /** Fast, cost-effective model for summarization and light analysis. */

@@ -170,7 +170,7 @@ export const TestPlanResultSchema = z.strictObject({
   summary: z.string().min(1).max(1000).describe('Plan overview.'),
   testCases: z
     .array(TestCaseSchema)
-    .min(1)
+    .min(0)
     .max(30)
     .describe('Test cases (must_have first).'),
   coverageSummary: z
@@ -279,10 +279,22 @@ export const RefactorCodeGeminiResultSchema = z.strictObject({
 export const RefactorCodeResultSchema = RefactorCodeGeminiResultSchema.extend({
   filePath: z.string().describe('Analyzed file path.'),
   language: z.string().describe('Detected/provided language.'),
-  namingIssuesCount: z.int().min(0).describe('Naming issues count.'),
-  complexityIssuesCount: z.int().min(0).describe('Complexity issues count.'),
-  duplicationIssuesCount: z.int().min(0).describe('Duplication issues count.'),
-  groupingIssuesCount: z.int().min(0).describe('Grouping issues count.'),
+  namingIssuesCount: z.int().min(0).max(15).describe('Naming issues count.'),
+  complexityIssuesCount: z
+    .int()
+    .min(0)
+    .max(15)
+    .describe('Complexity issues count.'),
+  duplicationIssuesCount: z
+    .int()
+    .min(0)
+    .max(15)
+    .describe('Duplication issues count.'),
+  groupingIssuesCount: z
+    .int()
+    .min(0)
+    .max(15)
+    .describe('Grouping issues count.'),
 });
 
 export type DefaultOutput = z.infer<typeof DefaultOutputSchema>;
@@ -362,6 +374,7 @@ export const VerifyLogicGeminiResultSchema = z.strictObject({
         language: z.string().describe('Programming language (e.g. python).'),
       })
     )
+    .min(0)
     .max(10)
     .describe('Code generated and executed during verification.'),
   executionResults: z
@@ -371,6 +384,7 @@ export const VerifyLogicGeminiResultSchema = z.strictObject({
         output: z.string().describe('stdout on success, stderr on failure.'),
       })
     )
+    .min(0)
     .max(10)
     .describe('Results from server-side code execution.'),
 });

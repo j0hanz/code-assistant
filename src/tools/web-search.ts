@@ -47,6 +47,7 @@ export function formatGroundedResponse(
   const supports = metadata.groundingSupports;
   const chunks = metadata.groundingChunks;
   let formattedText = text;
+  const originalLength = text.length;
 
   // Sort supports by end_index in descending order to avoid shifting issues when inserting.
   const sortedSupports = [...supports].sort(
@@ -55,7 +56,12 @@ export function formatGroundedResponse(
 
   for (const support of sortedSupports) {
     const endIndex = support.segment?.endIndex;
-    if (endIndex === undefined || !support.groundingChunkIndices?.length) {
+    if (
+      endIndex === undefined ||
+      endIndex < 0 ||
+      endIndex > originalLength ||
+      !support.groundingChunkIndices?.length
+    ) {
       continue;
     }
 

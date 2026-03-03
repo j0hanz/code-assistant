@@ -303,6 +303,7 @@ type SendResourceUpdated = (params: { uri: string }) => Promise<void>;
 
 const diffSlots = new Map<string, DiffSlot>();
 let sendResourceUpdated: SendResourceUpdated | undefined;
+let cleanupTimer: NodeJS.Timeout | undefined;
 
 function setDiffSlot(key: string, data: DiffSlot | undefined): void {
   if (data) {
@@ -322,7 +323,7 @@ function notifyDiffUpdated(): void {
 export function initDiffStore(server: McpServer): void {
   sendResourceUpdated = (params) => server.server.sendResourceUpdated(params);
 
-  startCleanupTimer(() => {
+  cleanupTimer = startCleanupTimer(() => {
     const ttl = diffCacheTtlMs.get();
     const now = Date.now();
     for (const [key, slot] of diffSlots) {
@@ -331,6 +332,13 @@ export function initDiffStore(server: McpServer): void {
       }
     }
   });
+}
+
+export function disposeDiffStore(): void {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = undefined;
+  }
 }
 
 export function storeDiff(data: DiffSlot, key: string = process.cwd()): void {

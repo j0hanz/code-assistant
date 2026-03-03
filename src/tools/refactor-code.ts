@@ -49,11 +49,33 @@ Return strict JSON matching the schema. No markdown, prose outside JSON, or extr
 
 const TOOL_CONTRACT = requireToolContract('refactor_code');
 
-function countByCategory(
-  suggestions: readonly { category: string }[],
-  category: string
-): number {
-  return suggestions.filter((s) => s.category === category).length;
+function countCategories(suggestions: readonly { category: string }[]): {
+  naming: number;
+  complexity: number;
+  duplication: number;
+  grouping: number;
+} {
+  let naming = 0;
+  let complexity = 0;
+  let duplication = 0;
+  let grouping = 0;
+  for (const s of suggestions) {
+    switch (s.category) {
+      case 'naming':
+        naming++;
+        break;
+      case 'complexity':
+        complexity++;
+        break;
+      case 'duplication':
+        duplication++;
+        break;
+      case 'grouping':
+        grouping++;
+        break;
+    }
+  }
+  return { naming, complexity, duplication, grouping };
 }
 
 export function registerRefactorCodeTool(server: McpServer): void {
@@ -106,21 +128,16 @@ export function registerRefactorCodeTool(server: McpServer): void {
     },
     transformResult: (_input, result, ctx) => {
       const file = getFileContextSnapshot(ctx);
+      const counts = countCategories(result.suggestions);
 
       return {
         ...result,
         filePath: file.filePath,
         language: file.language,
-        namingIssuesCount: countByCategory(result.suggestions, 'naming'),
-        complexityIssuesCount: countByCategory(
-          result.suggestions,
-          'complexity'
-        ),
-        duplicationIssuesCount: countByCategory(
-          result.suggestions,
-          'duplication'
-        ),
-        groupingIssuesCount: countByCategory(result.suggestions, 'grouping'),
+        namingIssuesCount: counts.naming,
+        complexityIssuesCount: counts.complexity,
+        duplicationIssuesCount: counts.duplication,
+        groupingIssuesCount: counts.grouping,
       };
     },
   });
