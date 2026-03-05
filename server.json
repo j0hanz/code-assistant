@@ -1,19 +1,19 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.j0hanz/code-assistant",
-  "title": "Code Assistant",
+  "name": "io.github.j0hanz/code-lens",
+  "title": "Code Lens",
   "description": "Gemini-powered MCP server for code analysis.",
   "repository": {
-    "url": "https://github.com/j0hanz/code-assistant",
+    "url": "https://github.com/j0hanz/code-lens",
     "source": "github"
   },
-  "websiteUrl": "https://github.com/j0hanz/code-assistant#readme",
-  "version": "1.2.0",
+  "websiteUrl": "https://github.com/j0hanz/code-lens#readme",
+  "version": "0.9.0",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@j0hanz/code-assistant",
-      "version": "1.2.0",
+      "identifier": "@j0hanz/code-lens",
+      "version": "0.9.0",
       "transport": {
         "type": "stdio"
       },

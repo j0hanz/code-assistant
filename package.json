@@ -1,7 +1,7 @@
 {
-  "name": "@j0hanz/code-assistant",
-  "version": "1.2.0",
-  "mcpName": "io.github.j0hanz/code-assistant",
+  "name": "@j0hanz/code-lens",
+  "version": "0.9.0",
+  "mcpName": "io.github.j0hanz/code-lens",
   "description": "Gemini-powered MCP server for code analysis.",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "code-assistant": "dist/index.js"
+    "code-lens": "dist/index.js"
   },
   "files": [
     "dist",
@@ -24,13 +24,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/j0hanz/code-assistant.git"
+    "url": "git+https://github.com/j0hanz/code-lens.git"
   },
-  "homepage": "https://github.com/j0hanz/code-assistant#readme",
+  "homepage": "https://github.com/j0hanz/code-lens#readme",
   "keywords": [
     "mcp",
     "mcp-server",
-    "code-assistant",
+    "code-lens",
     "code-review",
     "code-suggestions",
     "code-explanations",

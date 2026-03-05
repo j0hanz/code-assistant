@@ -68,7 +68,7 @@ export async function createDiffCache(
       model: effectiveModel,
       config: {
         contents: [{ role: 'user', parts: [{ text: diff }] }],
-        displayName: 'code-assistant-diff',
+        displayName: 'code-lens-diff',
         ttl,
       },
     });

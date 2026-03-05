@@ -1,18 +1,18 @@
-<!-- mcp-name: io.github.j0hanz/code-assistant -->
+<!-- mcp-name: io.github.j0hanz/code-lens -->
 
-# Code Assistant MCP Server
+# Code Lens MCP Server
 
-[![npm version](https://img.shields.io/npm/v/%40j0hanz%2Fcode-assistant?style=flat-square&logo=npm)](https://www.npmjs.com/package/%40j0hanz%2Fcode-assistant) [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#contributing-and-license)
+[![npm version](https://img.shields.io/npm/v/%40j0hanz%2Fcode-lens?style=flat-square&logo=npm)](https://www.npmjs.com/package/%40j0hanz%2Fcode-lens) [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#contributing-and-license)
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-assistant&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-assistant&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D&quality=insiders) [![Install in Visual Studio](https://img.shields.io/badge/Visual_Studio-Install_Server-C16FDE?logo=visualstudio&logoColor=white)](https://vs-open.link/mcp-install?%7B%22code-assistant%22%3A%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D%7D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-lens&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-lens&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D&quality=insiders) [![Install in Visual Studio](https://img.shields.io/badge/Visual_Studio-Install_Server-C16FDE?logo=visualstudio&logoColor=white)](https://vs-open.link/mcp-install?%7B%22code-lens%22%3A%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D%7D)
 
-[![Add to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=code-assistant&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1hc3Npc3RhbnRAbGF0ZXN0Il19) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=code-assistant&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1hc3Npc3RhbnRAbGF0ZXN0Il19) [![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=-y&arg=%40j0hanz%2Fcode-assistant%40latest&id=%40j0hanz%2Fcode-assistant&name=code-assistant&description=Gemini-powered%20MCP%20server%20for%20code%20analysis.)
+[![Add to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=code-lens&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1sZW5zQGxhdGVzdCJdfQ==) [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=code-lens&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1sZW5zQGxhdGVzdCJdfQ==) [![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=-y&arg=%40j0hanz%2Fcode-lens%40latest&id=%40j0hanz%2Fcode-lens&name=code-lens&description=Gemini-powered%20MCP%20server%20for%20code%20analysis.)
 
 Gemini-powered MCP server for automated code review, analysis, and documentation.
 
 ## Overview
 
-Code Assistant is a [Model Context Protocol](https://modelcontextprotocol.io/) server that uses Google Gemini to analyze diffs, review pull requests, detect code smells, generate documentation, and verify logic. It exposes 13 tools, 7 resources, and 5 prompts over stdio transport.
+Code Lens is a [Model Context Protocol](https://modelcontextprotocol.io/) server that uses Google Gemini to analyze diffs, review pull requests, detect code smells, generate documentation, and verify logic. It exposes 13 tools, 7 resources, and 5 prompts over stdio transport.
 
 ## Key Features
 
@@ -32,9 +32,9 @@ Code Assistant is a [Model Context Protocol](https://modelcontextprotocol.io/) s
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -46,7 +46,7 @@ Code Assistant is a [Model Context Protocol](https://modelcontextprotocol.io/) s
 ### Docker
 
 ```bash
-docker run -i --rm -e GEMINI_API_KEY="your-api-key" ghcr.io/j0hanz/code-assistant
+docker run -i --rm -e GEMINI_API_KEY="your-api-key" ghcr.io/j0hanz/code-lens
 ```
 
 Or with Docker Compose:
@@ -60,16 +60,16 @@ GEMINI_API_KEY=your-api-key docker compose up
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-assistant&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-lens&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D)
 
 Add to `.vscode/mcp.json`:
 
 ```json
 {
   "servers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -81,7 +81,7 @@ Add to `.vscode/mcp.json`:
 Or install via CLI:
 
 ```sh
-code --add-mcp '{"name":"code-assistant","command":"npx","args":["-y","@j0hanz/code-assistant@latest"]}'
+code --add-mcp '{"name":"code-lens","command":"npx","args":["-y","@j0hanz/code-lens@latest"]}'
 ```
 
 For more info, see [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
@@ -91,16 +91,16 @@ For more info, see [VS Code MCP docs](https://code.visualstudio.com/docs/copilot
 <details>
 <summary><b>Install in VS Code Insiders</b></summary>
 
-[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-assistant&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D&quality=insiders)
+[![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_Server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://insiders.vscode.dev/redirect/mcp/install?name=code-lens&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D&quality=insiders)
 
 Add to `.vscode/mcp.json`:
 
 ```json
 {
   "servers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -112,7 +112,7 @@ Add to `.vscode/mcp.json`:
 Or install via CLI:
 
 ```sh
-code-insiders --add-mcp '{"name":"code-assistant","command":"npx","args":["-y","@j0hanz/code-assistant@latest"]}'
+code-insiders --add-mcp '{"name":"code-lens","command":"npx","args":["-y","@j0hanz/code-lens@latest"]}'
 ```
 
 For more info, see [VS Code Insiders MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers).
@@ -122,16 +122,16 @@ For more info, see [VS Code Insiders MCP docs](https://code.visualstudio.com/doc
 <details>
 <summary><b>Install in Cursor</b></summary>
 
-[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=code-assistant&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1hc3Npc3RhbnRAbGF0ZXN0Il19)
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=code-lens&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1sZW5zQGxhdGVzdCJdfQ==)
 
 Add to `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -147,16 +147,16 @@ For more info, see [Cursor MCP docs](https://docs.cursor.com/context/model-conte
 <details>
 <summary><b>Install in Visual Studio</b></summary>
 
-[![Install in Visual Studio](https://img.shields.io/badge/Visual_Studio-Install_Server-C16FDE?logo=visualstudio&logoColor=white)](https://vs-open.link/mcp-install?%7B%22code-assistant%22%3A%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-assistant%40latest%22%5D%7D%7D)
+[![Install in Visual Studio](https://img.shields.io/badge/Visual_Studio-Install_Server-C16FDE?logo=visualstudio&logoColor=white)](https://vs-open.link/mcp-install?%7B%22code-lens%22%3A%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40j0hanz%2Fcode-lens%40latest%22%5D%7D%7D)
 
 Add to `mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -172,14 +172,14 @@ For more info, see [Visual Studio MCP docs](https://learn.microsoft.com/en-us/vi
 <details>
 <summary><b>Install in Goose</b></summary>
 
-[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=-y&arg=%40j0hanz%2Fcode-assistant%40latest&id=%40j0hanz%2Fcode-assistant&name=code-assistant&description=Gemini-powered%20MCP%20server%20for%20code%20analysis.)
+[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=-y&arg=%40j0hanz%2Fcode-lens%40latest&id=%40j0hanz%2Fcode-lens&name=code-lens&description=Gemini-powered%20MCP%20server%20for%20code%20analysis.)
 
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -195,14 +195,14 @@ For more info, see [Goose MCP docs](https://block.github.io/goose/docs/getting-s
 <details>
 <summary><b>Install in LM Studio</b></summary>
 
-[![Add to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=code-assistant&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1hc3Npc3RhbnRAbGF0ZXN0Il19)
+[![Add to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=code-lens&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBqMGhhbnovY29kZS1sZW5zQGxhdGVzdCJdfQ==)
 
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -223,9 +223,9 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -242,7 +242,7 @@ For more info, see [Claude Desktop MCP docs](https://modelcontextprotocol.io/qui
 <summary><b>Install in Claude Code</b></summary>
 
 ```sh
-claude mcp add code-assistant -- npx -y @j0hanz/code-assistant@latest
+claude mcp add code-lens -- npx -y @j0hanz/code-lens@latest
 ```
 
 Or add to config:
@@ -250,9 +250,9 @@ Or add to config:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -273,9 +273,9 @@ Add to `~/.codeium/windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -292,7 +292,7 @@ For more info, see [Windsurf MCP docs](https://docs.windsurf.com/windsurf/mcp).
 <summary><b>Install in Amp</b></summary>
 
 ```sh
-amp mcp add code-assistant -- npx -y @j0hanz/code-assistant@latest
+amp mcp add code-lens -- npx -y @j0hanz/code-lens@latest
 ```
 
 Or add to config:
@@ -300,9 +300,9 @@ Or add to config:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -323,9 +323,9 @@ Add to `cline_mcp_settings.json`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -346,9 +346,9 @@ Add to `~/.codex/config.yaml`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -369,9 +369,9 @@ Add to `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -390,9 +390,9 @@ For more info, see [GitHub Copilot MCP docs](https://code.visualstudio.com/docs/
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -413,9 +413,9 @@ Add to `.kiro/settings/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -436,9 +436,9 @@ Add to `~/.gemini/settings.json`:
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -459,10 +459,10 @@ Add to `~/.config/zed/settings.json`:
 ```json
 {
   "context_servers": {
-    "code-assistant": {
+    "code-lens": {
       "settings": {
         "command": "npx",
-        "args": ["-y", "@j0hanz/code-assistant@latest"]
+        "args": ["-y", "@j0hanz/code-lens@latest"]
       }
     }
   }
@@ -483,9 +483,9 @@ Add to your VS Code `settings.json` under `augment.advanced`:
   "augment.advanced": {
     "mcpServers": [
       {
-        "id": "code-assistant",
+        "id": "code-lens",
         "command": "npx",
-        "args": ["-y", "@j0hanz/code-assistant@latest"],
+        "args": ["-y", "@j0hanz/code-lens@latest"],
         "env": {
           "GEMINI_API_KEY": "your-api-key"
         }
@@ -505,9 +505,9 @@ For more info, see [Augment MCP docs](https://docs.augmentcode.com/setup-mcp-ser
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -526,9 +526,9 @@ For more info, see [Roo Code MCP docs](https://docs.roocode.com/features/mcp/usi
 ```json
 {
   "mcpServers": {
-    "code-assistant": {
+    "code-lens": {
       "command": "npx",
-      "args": ["-y", "@j0hanz/code-assistant@latest"],
+      "args": ["-y", "@j0hanz/code-lens@latest"],
       "env": {
         "GEMINI_API_KEY": "your-api-key"
       }
@@ -576,7 +576,7 @@ For more info, see [Kilo Code MCP docs](https://kilocode.ai/docs/features/mcp/us
     │
     │ Transport: stdio
     ▼
-[MCP Server: code-assistant]
+[MCP Server: code-lens]
     │ Entry: src/index.ts → src/server.ts
     │
     ├── initialize / initialized (lifecycle handshake)
@@ -709,7 +709,7 @@ All Gemini-powered tools return validated `structuredContent` alongside text `co
 ### CLI Flags
 
 ```bash
-npx @j0hanz/code-assistant@latest --model gemini-2.5-flash --max-diff-chars 200000
+npx @j0hanz/code-lens@latest --model gemini-2.5-flash --max-diff-chars 200000
 ```
 
 | Flag               | Env Equivalent   |
@@ -747,7 +747,7 @@ npm run knip         # Dead code detection
 - CI: `.github/workflows/release.yml`
 - Docker: Multi-stage build (`Dockerfile`) with `node:24-alpine`
 - Docker Compose: `docker-compose.yml`
-- npm: Published as [`@j0hanz/code-assistant`](https://www.npmjs.com/package/@j0hanz/code-assistant)
+- npm: Published as [`@j0hanz/code-lens`](https://www.npmjs.com/package/@j0hanz/code-lens)
 
 ## Troubleshooting
 
@@ -768,4 +768,4 @@ npm run knip         # Dead code detection
 
 MIT License. See [LICENSE](LICENSE) for details.
 
-Contributions welcome via [pull requests](https://github.com/j0hanz/code-assistant/pulls).
+Contributions welcome via [pull requests](https://github.com/j0hanz/code-lens/pulls).

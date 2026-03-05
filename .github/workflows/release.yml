@@ -152,7 +152,7 @@ jobs:
       - name: Publish
         run: |
           npm publish --access public --provenance --ignore-scripts || {
-            if npm view "@j0hanz/code-assistant@$VERSION" version 2>/dev/null; then
+            if npm view "@j0hanz/code-lens@$VERSION" version 2>/dev/null; then
               echo "::notice::v$VERSION already on npm — skipped"
             else
               exit 1
@@ -165,7 +165,7 @@ jobs:
           ## 📦 Published to npm
           | | |
           |---|---|
-          | **Package** | [\`@j0hanz/code-assistant@$VERSION\`](https://www.npmjs.com/package/@j0hanz/code-assistant) |
+          | **Package** | [\`@j0hanz/code-lens@$VERSION\`](https://www.npmjs.com/package/@j0hanz/code-lens) |
           | **Auth** | Trusted Publishing (OIDC) |
           | **Provenance** | ✅ |
           EOF
@@ -201,7 +201,7 @@ jobs:
           ## 📡 Published to MCP Registry
           | | |
           |---|---|
-          | **Server** | \`io.github.j0hanz/code-assistant@$VERSION\` |
+          | **Server** | \`io.github.j0hanz/code-lens@$VERSION\` |
           | **Registry** | [registry.modelcontextprotocol.io](https://registry.modelcontextprotocol.io) |
           EOF
 
