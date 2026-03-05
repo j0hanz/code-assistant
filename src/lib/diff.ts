@@ -11,7 +11,7 @@ import {
   getCurrentDiffCache,
   shouldCacheDiff,
 } from './gemini/cache.js';
-import { createErrorToolResponse, type ErrorMeta } from './tools.js';
+import { createErrorToolResponse, type ErrorMeta } from './tool-response.js';
 
 export type { ParsedFile };
 

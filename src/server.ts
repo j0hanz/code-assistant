@@ -89,11 +89,17 @@ export interface ServerHandle {
   shutdown: () => Promise<void>;
 }
 
+const SERVER_TITLE = 'Code Lens';
+const SERVER_DESCRIPTION =
+  'Gemini-powered MCP server for automated code review, analysis, and documentation.';
+
 function createMcpServer(taskStore: CodeLensTaskStore): McpServer {
   return new McpServer(
     {
       name: SERVER_NAME,
       version: SERVER_VERSION,
+      title: SERVER_TITLE,
+      description: SERVER_DESCRIPTION,
     },
     {
       instructions: SERVER_INSTRUCTIONS,

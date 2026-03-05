@@ -100,6 +100,16 @@ const maxTaskTtlMsConfig = createCachedEnvInt(
   'MAX_TASK_TTL_MS',
   DEFAULT_MAX_TASK_TTL_MS
 );
+
+/** Read the configured task TTL. Used by server-config for display. */
+export function getTaskTtlMs(): number {
+  return taskTtlMsConfig.get();
+}
+
+/** Read the configured max task TTL cap. Used by server-config for display. */
+export function getMaxTaskTtlMs(): number {
+  return maxTaskTtlMsConfig.get();
+}
 const DETERMINISTIC_JSON_RETRY_NOTE =
   'Deterministic JSON mode: keep key names exactly as schema-defined and preserve stable field ordering.';
 const COMPLETED_STATUS_PREFIX = 'completed: ';
@@ -364,23 +374,20 @@ function createGenerationRequest<
     prompt: promptParts.prompt,
     responseSchema,
     onLog,
-    ...(config.thinkingLevel !== undefined
-      ? { thinkingLevel: config.thinkingLevel }
-      : {}),
-    ...(config.timeoutMs !== undefined ? { timeoutMs: config.timeoutMs } : {}),
-    ...(config.maxOutputTokens !== undefined
-      ? { maxOutputTokens: config.maxOutputTokens }
-      : {}),
-    ...(config.temperature !== undefined
-      ? { temperature: config.temperature }
-      : {}),
-    ...(config.includeThoughts !== undefined
-      ? { includeThoughts: config.includeThoughts }
-      : {}),
-    ...(config.batchMode !== undefined ? { batchMode: config.batchMode } : {}),
-    ...(signal !== undefined ? { signal } : {}),
-    ...(cachedContent !== undefined ? { cachedContent } : {}),
   };
+
+  if (config.thinkingLevel !== undefined)
+    request.thinkingLevel = config.thinkingLevel;
+  if (config.timeoutMs !== undefined) request.timeoutMs = config.timeoutMs;
+  if (config.maxOutputTokens !== undefined)
+    request.maxOutputTokens = config.maxOutputTokens;
+  if (config.temperature !== undefined)
+    request.temperature = config.temperature;
+  if (config.includeThoughts !== undefined)
+    request.includeThoughts = config.includeThoughts;
+  if (config.batchMode !== undefined) request.batchMode = config.batchMode;
+  if (signal !== undefined) request.signal = signal;
+  if (cachedContent !== undefined) request.cachedContent = cachedContent;
 
   if (config.deterministicJson) {
     const responseKeyOrdering = extractResponseKeyOrdering(responseSchema);

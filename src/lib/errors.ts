@@ -2,11 +2,10 @@ import { inspect } from 'node:util';
 
 import { z } from 'zod';
 
-import type { ErrorMeta } from './tools.js';
+import type { ErrorMeta } from './tool-response.js';
 
 // --- API key sanitization ---
 
-/** Patterns matching sensitive credentials to prevent accidental leakage in error messages. */
 const SENSITIVE_PATTERNS: RegExp[] = [
   /AIza[0-9A-Za-z_-]{35}/g,
   /sk-[0-9A-Za-z_-]{20,}/g,

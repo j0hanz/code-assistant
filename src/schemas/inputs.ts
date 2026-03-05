@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { createBoundedString, createOptionalBoundedString } from './helpers.js';
+import {
+  createBoundedString,
+  createOptionalBoundedInteger,
+  createOptionalBoundedString,
+} from './helpers.js';
 
 const LANGUAGE_DESCRIPTION =
   'Primary language (e.g. TypeScript, Python, JavaScript, Go, Rust, Java). Auto-infer from files.';
@@ -13,14 +17,6 @@ function createLanguageSchema(): z.ZodOptional<z.ZodString> {
 
 function createRepositorySchema(): z.ZodString {
   return createBoundedString(1, 200, REPOSITORY_DESCRIPTION);
-}
-
-function createOptionalBoundedInteger(
-  min: number,
-  max: number,
-  description: string
-): z.ZodOptional<z.ZodInt> {
-  return z.int().min(min).max(max).optional().describe(description);
 }
 
 const RepositorySchema = createRepositorySchema();

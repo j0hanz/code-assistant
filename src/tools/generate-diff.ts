@@ -33,9 +33,14 @@ const gitRootByCwd = new Map<string, string>();
 
 type DiffMode = 'unstaged' | 'staged';
 
-async function findGitRoot(cwd: string = process.cwd()): Promise<string> {
+async function findGitRoot(
+  cwd: string = process.cwd(),
+  signal?: AbortSignal
+): Promise<string> {
   const cached = gitRootByCwd.get(cwd);
   if (cached) {
+    gitRootByCwd.delete(cwd);
+    gitRootByCwd.set(cwd, cached);
     return cached;
   }
 
@@ -45,6 +50,7 @@ async function findGitRoot(cwd: string = process.cwd()): Promise<string> {
     {
       cwd,
       encoding: 'utf8',
+      ...(signal ? { signal } : {}),
     }
   );
   const gitRoot = stdout.trim();
@@ -54,7 +60,6 @@ async function findGitRoot(cwd: string = process.cwd()): Promise<string> {
 
 function cacheGitRoot(cwd: string, gitRoot: string): void {
   if (gitRootByCwd.size >= MAX_GIT_ROOT_CACHE_SIZE) {
-    // LRU-style eviction: remove the oldest entry instead of clearing all.
     const oldestKey = gitRootByCwd.keys().next().value;
     if (oldestKey !== undefined) {
       gitRootByCwd.delete(oldestKey);
@@ -126,7 +131,7 @@ async function runGitDiff(
   mode: DiffMode,
   signal?: AbortSignal
 ): Promise<string> {
-  const gitRoot = await findGitRoot();
+  const gitRoot = await findGitRoot(process.cwd(), signal);
   const args = buildGitArgs(mode);
   const { stdout } = await execFileAsync('git', args, {
     cwd: gitRoot,

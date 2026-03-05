@@ -2,7 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { createCachedEnvInt, startCleanupTimer } from './config.js';
 import { formatUsNumber } from './format.js';
-import { createErrorToolResponse, type ErrorMeta } from './tools.js';
+import { createErrorToolResponse, type ErrorMeta } from './tool-response.js';
 
 // --- File Budget ---
 

@@ -1,45 +1,27 @@
-import { createCachedEnvInt } from '../lib/config.js';
 import { FLASH_MODEL } from '../lib/config.js';
+import { getMaxDiffChars } from '../lib/diff.js';
 import {
   formatThinkingLevel,
   formatTimeoutSeconds,
   formatUsNumber,
 } from '../lib/format.js';
 import { toInlineCode } from '../lib/format.js';
-import { getToolContracts } from '../lib/tools.js';
+import {
+  concurrencyWaitMsConfig,
+  maxConcurrentBatchCallsConfig,
+  maxConcurrentCallsConfig,
+} from '../lib/gemini/config.js';
+import {
+  getMaxTaskTtlMs,
+  getTaskTtlMs,
+  getToolContracts,
+} from '../lib/tools.js';
 
-const DEFAULT_MAX_DIFF_CHARS = 120_000;
-const DEFAULT_MAX_CONCURRENT_CALLS = 10;
-const DEFAULT_CONCURRENT_WAIT_MS = 2_000;
-const DEFAULT_SAFETY_THRESHOLD = 'BLOCK_NONE';
-const DEFAULT_TASK_TTL_MS = 300_000;
-const DEFAULT_MAX_TASK_TTL_MS = 3_600_000;
+const DEFAULT_SAFETY_THRESHOLD = 'BLOCK_MEDIUM_AND_ABOVE';
 
 const GEMINI_HARM_BLOCK_THRESHOLD_ENV_VAR = 'GEMINI_HARM_BLOCK_THRESHOLD';
 const GEMINI_MODEL_ENV_VAR = 'GEMINI_MODEL';
 const GEMINI_BATCH_MODE_ENV_VAR = 'GEMINI_BATCH_MODE';
-
-const diffCharsConfig = createCachedEnvInt(
-  'MAX_DIFF_CHARS',
-  DEFAULT_MAX_DIFF_CHARS
-);
-const concurrentCallsConfig = createCachedEnvInt(
-  'MAX_CONCURRENT_CALLS',
-  DEFAULT_MAX_CONCURRENT_CALLS
-);
-const concurrentBatchCallsConfig = createCachedEnvInt(
-  'MAX_CONCURRENT_BATCH_CALLS',
-  2
-);
-const concurrentWaitConfig = createCachedEnvInt(
-  'MAX_CONCURRENT_CALLS_WAIT_MS',
-  DEFAULT_CONCURRENT_WAIT_MS
-);
-const taskTtlConfig = createCachedEnvInt('TASK_TTL_MS', DEFAULT_TASK_TTL_MS);
-const maxTaskTtlConfig = createCachedEnvInt(
-  'MAX_TASK_TTL_MS',
-  DEFAULT_MAX_TASK_TTL_MS
-);
 
 function getModelOverride(): string {
   return process.env[GEMINI_MODEL_ENV_VAR] ?? FLASH_MODEL;
@@ -56,12 +38,12 @@ function getSafetyThreshold(): string {
 }
 
 export function buildServerConfig(): string {
-  const maxDiffChars = diffCharsConfig.get();
-  const maxConcurrent = concurrentCallsConfig.get();
-  const maxConcurrentBatch = concurrentBatchCallsConfig.get();
-  const concurrentWaitMs = concurrentWaitConfig.get();
-  const taskTtlMs = taskTtlConfig.get();
-  const maxTaskTtlMs = maxTaskTtlConfig.get();
+  const maxDiffChars = getMaxDiffChars();
+  const maxConcurrent = maxConcurrentCallsConfig.get();
+  const maxConcurrentBatch = maxConcurrentBatchCallsConfig.get();
+  const concurrentWaitMs = concurrencyWaitMsConfig.get();
+  const taskTtlMs = getTaskTtlMs();
+  const maxTaskTtlMs = getMaxTaskTtlMs();
   const defaultModel = getModelOverride();
   const batchMode = getBatchMode();
   const safetyThreshold = getSafetyThreshold();

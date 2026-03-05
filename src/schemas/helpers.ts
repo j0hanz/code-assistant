@@ -29,3 +29,11 @@ export function createBoundedStringArray(
     .max(maxItems)
     .describe(description);
 }
+
+export function createOptionalBoundedInteger(
+  min: number,
+  max: number,
+  description: string
+): z.ZodOptional<z.ZodInt> {
+  return z.int().min(min).max(max).optional().describe(description);
+}
