@@ -221,19 +221,15 @@ function isWorkflowKey(value: string): value is WorkflowKey {
 
 export type ToolCategory = 'diff' | 'file' | 'sync' | 'standalone';
 
-const DIFF_PREREQUISITE_PATTERN = /requires generate_diff/i;
-const FILE_PREREQUISITE_PATTERN = /requires load_file/i;
-
 export function classifyTool(toolName: string): ToolCategory {
   const contract = getToolContract(toolName);
   if (!contract) {
     return 'standalone';
   }
-  const firstGotcha = contract.gotchas[0] ?? '';
-  if (DIFF_PREREQUISITE_PATTERN.test(firstGotcha)) {
+  if (contract.requiresDiff === true) {
     return 'diff';
   }
-  if (FILE_PREREQUISITE_PATTERN.test(firstGotcha)) {
+  if (contract.requiresFile === true) {
     return 'file';
   }
   if (contract.model === 'none') {

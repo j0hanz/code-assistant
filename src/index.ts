@@ -47,13 +47,18 @@ function applyCliEnvironmentOverrides(
 }
 
 function parseCommandLineArgs(): void {
-  const { values } = parseArgs({
-    args: process.argv.slice(PROCESS_ARGS_START_INDEX),
-    options: CLI_OPTIONS,
-    strict: false,
-  });
+  try {
+    const { values } = parseArgs({
+      args: process.argv.slice(PROCESS_ARGS_START_INDEX),
+      options: CLI_OPTIONS,
+      strict: true,
+    });
 
-  applyCliEnvironmentOverrides(values);
+    applyCliEnvironmentOverrides(values);
+  } catch (error: unknown) {
+    console.error(`[error] ${getErrorMessage(error)}`);
+    process.exit(2);
+  }
 }
 
 // --- Server Lifecycle ---

@@ -12,6 +12,7 @@ import {
   NOISY_EXCLUDE_PATHSPECS,
   parseDiffFiles,
   storeDiff,
+  validateDiffBudget,
 } from '../lib/diff.js';
 import {
   createErrorToolResponse,
@@ -176,7 +177,14 @@ function createNoChangesResponse(
 function createSuccessResponse(
   diff: string,
   mode: DiffMode
-): ReturnType<typeof createToolResponse> {
+):
+  | ReturnType<typeof createToolResponse>
+  | ReturnType<typeof createErrorToolResponse> {
+  const budgetError = validateDiffBudget(diff);
+  if (budgetError) {
+    return budgetError;
+  }
+
   const parsedFiles = parseDiffFiles(diff);
   const stats = computeDiffStatsFromFiles(parsedFiles);
   const generatedAtMs = Date.now();
@@ -216,7 +224,7 @@ export function registerGenerateDiffTool(server: McpServer): void {
       }),
       outputSchema: createToolOutputSchema(GenerateDiffResultSchema),
       annotations: {
-        readOnlyHint: false,
+        readOnlyHint: true,
         idempotentHint: true,
         openWorldHint: false,
         destructiveHint: false,

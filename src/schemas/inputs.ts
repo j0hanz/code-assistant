@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { createBoundedString, createOptionalBoundedString } from './helpers.js';
 
 const LANGUAGE_DESCRIPTION =
-  'Primary language (e.g. TypeScript). Auto-infer from files.';
+  'Primary language (e.g. TypeScript, Python, JavaScript, Go, Rust, Java). Auto-infer from files.';
 
 const REPOSITORY_DESCRIPTION = 'Repo ID (owner/repo). Auto-infer from git/dir.';
 

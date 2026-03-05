@@ -53,6 +53,10 @@ export interface ToolContract {
   gotchas: readonly string[];
   crossToolFlow: readonly string[];
   constraints?: readonly string[];
+  /** Tool requires a cached diff from generate_diff. */
+  requiresDiff?: boolean;
+  /** Tool requires a cached file from load_file. */
+  requiresFile?: boolean;
 }
 
 interface StructuredToolRuntimeOptions {
@@ -246,6 +250,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'severity/categories feed triage and merge-gate decisions.',
     ],
+    requiresDiff: true,
   },
   {
     name: 'generate_review_summary',
@@ -266,6 +271,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use before deep review to decide whether Pro analysis is needed.',
     ],
+    requiresDiff: true,
   },
   {
     name: 'generate_test_plan',
@@ -288,6 +294,7 @@ export const TOOL_CONTRACTS = [
       'maxTestCases caps output after generation.',
     ],
     crossToolFlow: ['Pair with review tools to validate high-risk paths.'],
+    requiresDiff: true,
   },
   {
     name: 'analyze_time_space_complexity',
@@ -307,6 +314,7 @@ export const TOOL_CONTRACTS = [
       'Analyzes only changed code visible in the diff.',
     ],
     crossToolFlow: ['Use for algorithmic/performance-sensitive changes.'],
+    requiresDiff: true,
   },
   {
     name: 'detect_api_breaking_changes',
@@ -324,6 +332,7 @@ export const TOOL_CONTRACTS = [
       'Targets public API contracts over internal refactors.',
     ],
     crossToolFlow: ['Run before merge for API-surface-sensitive changes.'],
+    requiresDiff: true,
   },
   {
     name: 'load_file',
@@ -365,6 +374,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use after load_file. Provides refactoring roadmap for the cached file.',
     ],
+    requiresFile: true,
   },
   {
     name: 'ask_about_code',
@@ -385,6 +395,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use after load_file. Complements refactor_code for understanding code.',
     ],
+    requiresFile: true,
   },
   {
     name: 'verify_logic',
@@ -406,6 +417,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use after load_file. Complements ask_about_code for verification tasks.',
     ],
+    requiresFile: true,
   },
   {
     name: 'web_search',
@@ -445,6 +457,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use after load_file. Generates documentation for the cached file.',
     ],
+    requiresFile: true,
   },
   {
     name: 'detect_code_smells',
@@ -466,6 +479,7 @@ export const TOOL_CONTRACTS = [
     crossToolFlow: [
       'Use after load_file. Complements refactor_code with smell detection.',
     ],
+    requiresFile: true,
   },
 ] as const satisfies readonly ToolContract[];
 

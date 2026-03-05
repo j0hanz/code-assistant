@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
@@ -39,8 +40,19 @@ function validateFilePath(
   filePath: string,
   workspaceRoot: string
 ): string | undefined {
-  const resolved = path.resolve(filePath);
-  const resolvedRoot = path.resolve(workspaceRoot);
+  let resolved: string;
+  try {
+    resolved = realpathSync(path.resolve(filePath));
+  } catch {
+    return 'File path not found or not accessible.';
+  }
+
+  let resolvedRoot: string;
+  try {
+    resolvedRoot = realpathSync(path.resolve(workspaceRoot));
+  } catch {
+    return 'Workspace root not found or not accessible.';
+  }
 
   const relative = path.relative(resolvedRoot, resolved);
 
@@ -65,7 +77,7 @@ export function registerLoadFileTool(server: McpServer): void {
       inputSchema: LoadFileInputSchema,
       outputSchema: createToolOutputSchema(LoadFileResultSchema),
       annotations: {
-        readOnlyHint: false,
+        readOnlyHint: true,
         idempotentHint: true,
         openWorldHint: false,
         destructiveHint: false,

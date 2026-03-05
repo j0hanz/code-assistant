@@ -121,6 +121,14 @@ export function createToolResponse<
   };
 }
 
+/**
+ * Build an error tool response with `isError: true`.
+ *
+ * Intentionally omits `structuredContent`. The MCP SDK skips `outputSchema`
+ * validation when `isError` is true, so including it is unnecessary and could
+ * create schema mismatches if the error shape diverges from the success shape.
+ * Error details are available in `content[0].text` as JSON.
+ */
 export function createErrorToolResponse(
   code: string,
   message: string,

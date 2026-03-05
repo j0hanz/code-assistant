@@ -118,6 +118,7 @@ function buildToolAnnotations(
       readOnlyHint: true,
       idempotentHint: true,
       openWorldHint: false,
+      destructiveHint: false,
     };
   }
 
@@ -127,6 +128,7 @@ function buildToolAnnotations(
     readOnlyHint: !destructiveHint,
     idempotentHint: !destructiveHint,
     openWorldHint: false,
+    destructiveHint: destructiveHint ?? false,
     ...annotationOverrides,
   };
 }
@@ -878,6 +880,19 @@ function runToolTaskInBackground<
   store: RequestTaskStore,
   signal?: AbortSignal
 ): void {
+  if (signal?.aborted) {
+    if (hasTaskStatusUpdate(store)) {
+      store
+        .updateTaskStatus(
+          taskId,
+          'cancelled',
+          'Cancelled before execution started'
+        )
+        .catch(() => {});
+    }
+    return;
+  }
+
   runner.run(input).catch(async (error: unknown) => {
     // Safety net: run() swallows errors via handleRunFailure, so this only fires
     // if handleRunFailure itself throws (e.g. reporter/store internal crash).
