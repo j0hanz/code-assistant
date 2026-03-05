@@ -1,5 +1,3 @@
-import { performance } from 'node:perf_hooks';
-
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 import { createCachedEnvInt, startCleanupTimer } from './config.js';
@@ -16,7 +14,7 @@ const fileCharsConfig = createCachedEnvInt(
   DEFAULT_MAX_FILE_CHARS
 );
 
-export function getMaxFileChars(): number {
+function getMaxFileChars(): number {
   return fileCharsConfig.get();
 }
 
@@ -63,7 +61,10 @@ export interface FileSlot {
   language: string;
   lineCount: number;
   sizeChars: number;
+  /** Date.now() epoch ms — used for TTL checks and stale warnings. */
   cachedAt: number;
+  /** ISO 8601 timestamp for display in resources and tool responses. */
+  cachedAtIso: string;
 }
 
 type SendResourceUpdated = (params: { uri: string }) => Promise<void>;
@@ -85,7 +86,7 @@ export function initFileStore(server: McpServer): void {
   cleanupTimer = startCleanupTimer(() => {
     if (
       currentSlot &&
-      performance.now() - currentSlot.cachedAt > fileCacheTtlMs.get()
+      Date.now() - currentSlot.cachedAt > fileCacheTtlMs.get()
     ) {
       currentSlot = undefined;
     }
@@ -109,7 +110,7 @@ export function getFile(): FileSlot | undefined {
     return undefined;
   }
 
-  const age = performance.now() - currentSlot.cachedAt;
+  const age = Date.now() - currentSlot.cachedAt;
   if (age > fileCacheTtlMs.get()) {
     currentSlot = undefined;
     notifyFileUpdated();
@@ -117,10 +118,6 @@ export function getFile(): FileSlot | undefined {
   }
 
   return currentSlot;
-}
-
-export function hasFile(): boolean {
-  return getFile() !== undefined;
 }
 
 /** Test-only: directly set or clear the file slot without emitting resource-updated. */

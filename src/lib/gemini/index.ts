@@ -30,11 +30,7 @@ export {
 } from './retry.js';
 
 // Client / context / events
-export {
-  geminiEvents,
-  getCurrentRequestId,
-  setClientForTesting,
-} from './client.js';
+export { setClientForTesting } from './client.js';
 
 // Context caching
 export {
@@ -48,12 +44,9 @@ export {
   shouldCacheDiff,
 } from './cache.js';
 
-// Generation functions + queue snapshot
-export type { FileSearchResponse } from './generate.js';
+// Generation functions
 export {
   generateGroundedContent,
   generateStructuredJson,
   generateWithCodeExecution,
-  generateWithFileSearch,
-  getGeminiQueueSnapshot,
 } from './generate.js';

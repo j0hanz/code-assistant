@@ -849,20 +849,6 @@ async function runInlineBatchWithPolling(
 // Public API
 // ---------------------------------------------------------------------------
 
-export function getGeminiQueueSnapshot(): {
-  activeWaiters: number;
-  activeCalls: number;
-  activeBatchWaiters: number;
-  activeBatchCalls: number;
-} {
-  return {
-    activeWaiters: callLimiter.pendingCount,
-    activeCalls: callLimiter.active,
-    activeBatchWaiters: batchCallLimiter.pendingCount,
-    activeBatchCalls: batchCallLimiter.active,
-  };
-}
-
 export async function generateWithCodeExecution(
   request: GeminiStructuredRequest
 ): Promise<CodeExecutionResponse> {
@@ -882,19 +868,6 @@ export async function generateGroundedContent(
     // Provide a dummy schema if one is required by types, though it won't be used due to useGrounding check
     responseSchema: request.responseSchema,
   })) as { text: string; groundingMetadata: unknown };
-}
-
-export interface FileSearchResponse {
-  text: string;
-  parts: unknown[];
-}
-
-export async function generateWithFileSearch(
-  request: GeminiStructuredRequest & {
-    fileSearchStoreNames: readonly string[];
-  }
-): Promise<FileSearchResponse> {
-  return (await generateStructuredJson(request)) as FileSearchResponse;
 }
 
 export async function generateStructuredJson(

@@ -2,7 +2,6 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 
 import {
   cleanDiff,
@@ -19,6 +18,7 @@ import {
   createToolResponse,
   wrapToolHandler,
 } from '../lib/tools.js';
+import { GenerateDiffInputSchema } from '../schemas/inputs.js';
 import {
   createToolOutputSchema,
   GenerateDiffResultSchema,
@@ -215,13 +215,7 @@ export function registerGenerateDiffTool(server: McpServer): void {
       title: 'Generate Diff',
       description:
         'Generate a diff of the current branch working changes and cache it for all review tools. You MUST call this tool before calling any other review tool. Use "unstaged" for working-tree changes not yet staged, or "staged" for changes already added with git add.',
-      inputSchema: z.strictObject({
-        mode: z
-          .enum(['unstaged', 'staged'])
-          .describe(
-            '"unstaged": working-tree changes not yet staged. "staged": changes added to the index with git add.'
-          ),
-      }),
+      inputSchema: GenerateDiffInputSchema,
       outputSchema: createToolOutputSchema(GenerateDiffResultSchema),
       annotations: {
         readOnlyHint: true,
@@ -235,7 +229,7 @@ export function registerGenerateDiffTool(server: McpServer): void {
         toolName: 'Generate Diff',
       },
       async (input) => {
-        const { mode } = input;
+        const { mode } = GenerateDiffInputSchema.parse(input);
         return generateDiffToolResponse(mode);
       }
     )

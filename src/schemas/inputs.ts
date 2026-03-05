@@ -122,6 +122,16 @@ export const VerifyLogicInputSchema = z.strictObject({
   language: LanguageSchema,
 });
 
+export const GenerateDiffInputSchema = z.strictObject({
+  mode: z
+    .enum(['unstaged', 'staged'])
+    .describe(
+      '"unstaged": working-tree changes not yet staged. "staged": changes added to the index with git add.'
+    ),
+});
+
+export type GenerateDiffInput = z.infer<typeof GenerateDiffInputSchema>;
+
 export type AnalyzePrImpactInput = z.infer<typeof AnalyzePrImpactInputSchema>;
 export type GenerateDocumentationInput = z.infer<
   typeof GenerateDocumentationInputSchema

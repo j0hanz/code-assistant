@@ -45,6 +45,11 @@ Return strict JSON matching the schema. No markdown, prose outside JSON, or extr
 </output>
 `;
 
+/**
+ * Derives the `verified` flag from execution results.
+ * Returns false when no code blocks were executed (model chose not to verify),
+ * distinguishing "not verified" from "verified and failed".
+ */
 function deriveVerified(result: CodeExecutionResponse): boolean {
   if (result.executionResults.length === 0) {
     return false;

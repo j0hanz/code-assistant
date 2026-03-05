@@ -73,11 +73,6 @@ const UNKNOWN_CONTEXT: GeminiRequestContext = {
   model: UNKNOWN_REQUEST_CONTEXT_VALUE,
 };
 
-export function getCurrentRequestId(): string {
-  const context = geminiContext.getStore();
-  return context?.requestId ?? UNKNOWN_REQUEST_CONTEXT_VALUE;
-}
-
 export function nextRequestId(): string {
   return randomUUID();
 }
@@ -86,7 +81,7 @@ export function nextRequestId(): string {
 // Event emitter & debug logging
 // ---------------------------------------------------------------------------
 
-export const geminiEvents = new EventEmitter();
+const geminiEvents = new EventEmitter();
 
 const debug = debuglog('gemini') as ReturnType<typeof debuglog> & {
   enabled?: boolean;

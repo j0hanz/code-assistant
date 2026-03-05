@@ -8,7 +8,7 @@ import { createCachedEnvInt } from '../config.js';
 
 // Lazy-cached: first call happens after parseCommandLineArgs() sets GEMINI_MODEL.
 let _defaultModel: string | undefined;
-export const DEFAULT_MODEL = 'gemini-3-flash-preview';
+const DEFAULT_MODEL = 'gemini-3-flash-preview';
 const GEMINI_MODEL_ENV_VAR = 'GEMINI_MODEL';
 
 export function getDefaultModel(): string {

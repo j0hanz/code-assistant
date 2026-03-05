@@ -48,6 +48,8 @@ export function stripJsonSchemaConstraints(schema: JsonRecord): JsonRecord {
       continue;
     }
 
+    // Gemini API does not support "integer" as a JSON Schema type;
+    // erase to "number" so the constraint is accepted by the backend.
     if (key === 'type' && value === INTEGER_JSON_TYPE) {
       result[key] = NUMBER_JSON_TYPE;
       continue;

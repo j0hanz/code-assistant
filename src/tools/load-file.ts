@@ -1,7 +1,6 @@
 import { realpathSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { performance } from 'node:perf_hooks';
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
@@ -145,7 +144,8 @@ export function registerLoadFileTool(server: McpServer): void {
         const language = detectLanguage(resolved);
         const lineCount = content.split('\n').length;
         const sizeChars = content.length;
-        const cachedAt = performance.now();
+        const cachedAt = Date.now();
+        const cachedAtIso = new Date(cachedAt).toISOString();
 
         storeFile({
           filePath: resolved,
@@ -154,6 +154,7 @@ export function registerLoadFileTool(server: McpServer): void {
           lineCount,
           sizeChars,
           cachedAt,
+          cachedAtIso,
         });
 
         const summary = `File cached: ${path.basename(resolved)} (${language}, ${lineCount} lines, ${sizeChars} chars)`;

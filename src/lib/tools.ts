@@ -28,6 +28,7 @@ import { getErrorMessage } from './errors.js';
 import {
   createNoFileError,
   type FileSlot,
+  fileStaleWarningMs,
   getFile,
   validateFileBudget,
 } from './file-store.js';
@@ -99,6 +100,9 @@ const COMPLETED_STATUS_PREFIX = 'completed: ';
 const STALE_DIFF_WARNING_PREFIX = '\n\nWarning: The analyzed diff is over ';
 const STALE_DIFF_WARNING_SUFFIX =
   ' minutes old. If you have made recent changes, please run generate_diff again.';
+const STALE_FILE_WARNING_PREFIX = '\n\nWarning: The analyzed file was loaded ';
+const STALE_FILE_WARNING_SUFFIX =
+  ' minutes ago. If the file has changed, please run load_file again.';
 
 const JSON_PARSE_ERROR_PATTERN = /model produced invalid json/i;
 const responseSchemaCache = new WeakMap<object, Record<string, unknown>>();
@@ -397,6 +401,24 @@ function appendStaleDiffWarning(
   return textContent ? textContent + warning : warning;
 }
 
+function appendStaleFileWarning(
+  textContent: string | undefined,
+  fileSlot: FileSlot | undefined
+): string | undefined {
+  if (!fileSlot) {
+    return textContent;
+  }
+
+  const ageMs = Date.now() - fileSlot.cachedAt;
+  if (ageMs <= fileStaleWarningMs.get()) {
+    return textContent;
+  }
+
+  const ageMinutes = Math.round(ageMs / 60_000);
+  const warning = `${STALE_FILE_WARNING_PREFIX}${ageMinutes}${STALE_FILE_WARNING_SUFFIX}`;
+  return textContent ? textContent + warning : warning;
+}
+
 function toLoggingLevel(level: string): LoggingLevel {
   switch (level) {
     case 'debug':
@@ -500,7 +522,7 @@ async function validateRequest<
   return undefined;
 }
 
-export class ToolExecutionRunner<
+class ToolExecutionRunner<
   TInput extends object,
   TResult extends object,
   TFinal extends TResult,
@@ -698,7 +720,8 @@ export class ToolExecutionRunner<
     const textContent = this.config.formatOutput
       ? this.config.formatOutput(finalResult)
       : undefined;
-    return appendStaleDiffWarning(textContent, ctx.diffSlot);
+    const withDiffWarning = appendStaleDiffWarning(textContent, ctx.diffSlot);
+    return appendStaleFileWarning(withDiffWarning, ctx.fileSlot);
   }
 
   private async finalizeSuccessfulRun(
@@ -831,7 +854,7 @@ function toProgressExtra(extra: CreateTaskRequestHandlerExtra): ProgressExtra {
   return extra as unknown as ProgressExtra;
 }
 
-export function createGeminiLogger(
+function createGeminiLogger(
   server: McpServer
 ): (level: string, data: unknown) => Promise<void> {
   return async (level, data) => {

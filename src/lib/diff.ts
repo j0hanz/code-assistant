@@ -251,9 +251,7 @@ export function computeDiffStatsAndPathsFromFiles(
   return { stats, paths };
 }
 
-export function extractChangedPathsFromFiles(
-  files: readonly ParsedFile[]
-): string[] {
+function extractChangedPathsFromFiles(files: readonly ParsedFile[]): string[] {
   if (isNoFiles(files)) return EMPTY_PATHS;
   return sortPaths(getUniquePaths(files));
 }

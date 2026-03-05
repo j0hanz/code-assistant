@@ -210,7 +210,7 @@ const RESPONSE_STYLE_PARAM = createParam(
   'Output format. Default: concise (2-4 sentences).'
 );
 
-export const TOOL_CONTRACTS = [
+const TOOL_CONTRACTS = [
   {
     name: 'generate_diff',
     purpose:

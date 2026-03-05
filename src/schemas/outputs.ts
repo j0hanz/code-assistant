@@ -146,7 +146,7 @@ export const ReviewSummaryResultSchema = ReviewSummaryGeminiResultSchema.extend(
   }
 );
 
-export const TestCaseSchema = z.strictObject({
+const TestCaseSchema = z.strictObject({
   name: z.string().min(1).max(200).describe('Test case name.'),
   type: z
     .enum([
@@ -247,7 +247,7 @@ const REFACTOR_CATEGORIES = [
 
 const REFACTOR_PRIORITIES = ['high', 'medium', 'low'] as const;
 
-export const RefactorSuggestionSchema = z.strictObject({
+const RefactorSuggestionSchema = z.strictObject({
   category: z.enum(REFACTOR_CATEGORIES).describe('Refactoring category.'),
   target: createBoundedString(
     1,
@@ -319,7 +319,7 @@ export type RefactorCodeResult = z.infer<typeof RefactorCodeResultSchema>;
 
 const CONFIDENCE_LEVELS = ['high', 'medium', 'low'] as const;
 
-export const AskCodeReferenceSchema = z.strictObject({
+const AskCodeReferenceSchema = z.strictObject({
   target: createBoundedString(
     1,
     300,
@@ -414,7 +414,7 @@ const DOC_BLOCK_KINDS = [
   'enum',
 ] as const;
 
-export const DocBlockSchema = z.strictObject({
+const DocBlockSchema = z.strictObject({
   target: createBoundedString(1, 300, 'Exported symbol name.'),
   kind: z.enum(DOC_BLOCK_KINDS).describe('Symbol kind.'),
   signature: createBoundedString(1, 500, 'Declaration signature.'),
@@ -481,7 +481,7 @@ const OVERALL_HEALTH_LEVELS = [
   'unhealthy',
 ] as const;
 
-export const CodeSmellSchema = z.strictObject({
+const CodeSmellSchema = z.strictObject({
   type: z.enum(CODE_SMELL_TYPES).describe('Smell category.'),
   target: createBoundedString(1, 300, 'Function/class/block name or location.'),
   severity: z.enum(SMELL_SEVERITIES).describe('Finding severity.'),
@@ -563,7 +563,7 @@ export const LoadFileResultSchema = z.strictObject({
   language: z.string().describe('Detected programming language.'),
   lineCount: z.int().min(0).describe('Number of lines.'),
   sizeChars: z.int().min(0).describe('Character count.'),
-  cachedAt: z.number().describe('Performance timestamp of caching.'),
+  cachedAt: z.number().describe('Unix epoch ms when file was cached.'),
   message: z.string().describe('Human-readable summary.'),
 });
 

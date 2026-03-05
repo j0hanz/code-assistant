@@ -173,7 +173,7 @@ function registerDiffResource(server: McpServer): void {
   );
 }
 
-export const FILE_RESOURCE_DESCRIPTION =
+const FILE_RESOURCE_DESCRIPTION =
   'The most recently loaded source file, cached by load_file. Read by file analysis tools automatically.';
 
 function formatFileResourceText(): string {
@@ -182,7 +182,7 @@ function formatFileResourceText(): string {
     return '# No file cached. Call load_file first.';
   }
 
-  return `# File — ${slot.filePath} — ${slot.cachedAt}\n# ${slot.lineCount} lines, ${slot.sizeChars} chars\n\n${slot.content}`;
+  return `# File — ${slot.filePath} — ${slot.cachedAtIso}\n# ${slot.lineCount} lines, ${slot.sizeChars} chars\n\n${slot.content}`;
 }
 
 function registerFileResource(server: McpServer): void {

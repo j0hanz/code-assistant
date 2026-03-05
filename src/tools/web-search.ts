@@ -49,7 +49,8 @@ export function formatGroundedResponse(
   let formattedText = text;
   const originalLength = text.length;
 
-  // Sort supports by end_index in descending order to avoid shifting issues when inserting.
+  // Sort supports by end_index in descending order so that inserting
+  // citation strings never shifts the character offsets of earlier segments.
   const sortedSupports = [...supports].sort(
     (a, b) => (b.segment?.endIndex ?? 0) - (a.segment?.endIndex ?? 0)
   );
