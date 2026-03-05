@@ -36,6 +36,8 @@ export interface ToolContract {
   purpose: string;
   /** Set to 'none' for synchronous (non-Gemini) tools. */
   model: string;
+  /** MCP per-tool task negotiation value exposed in tools/list. */
+  taskSupport: 'forbidden' | 'optional' | 'required';
   /** Set to 0 for synchronous (non-Gemini) tools. */
   timeoutMs: number;
   thinkingLevel?: 'minimal' | 'low' | 'medium' | 'high';
@@ -216,6 +218,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Generate a diff of current changes and cache it server-side. MUST be called before any other tool. Uses git to capture unstaged or staged changes in the current working directory.',
     model: 'none',
+    taskSupport: 'forbidden',
     timeoutMs: 0,
     maxOutputTokens: 0,
     params: cloneParams(MODE_PARAM),
@@ -235,6 +238,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Assess severity, categories, breaking changes, and rollback complexity.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
@@ -256,6 +260,7 @@ const TOOL_CONTRACTS = [
     name: 'generate_review_summary',
     purpose: 'Produce PR summary, risk rating, and merge recommendation.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
@@ -277,6 +282,7 @@ const TOOL_CONTRACTS = [
     name: 'generate_test_plan',
     purpose: 'Generate prioritized test cases and coverage guidance.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
@@ -301,6 +307,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Analyze Big-O complexity and detect degradations in changed code.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: LIGHT_MAX_OUTPUT_TOKENS,
@@ -320,6 +327,7 @@ const TOOL_CONTRACTS = [
     name: 'detect_api_breaking_changes',
     purpose: 'Detect breaking API/interface changes in a diff.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
@@ -339,6 +347,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Cache a single file for analysis tools. Accepts relative path from workspace root (preferred) or absolute path.',
     model: 'none',
+    taskSupport: 'forbidden',
     timeoutMs: 0,
     maxOutputTokens: 0,
     params: cloneParams(FILE_PATH_PARAM),
@@ -358,6 +367,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Analyze cached file for complexity, duplication, naming, and grouping improvements. Focuses on high-impact structural issues.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     thinkingLevel: FLASH_TRIAGE_THINKING_LEVEL,
     maxOutputTokens: LIGHT_MAX_OUTPUT_TOKENS,
@@ -380,6 +390,7 @@ const TOOL_CONTRACTS = [
     name: 'ask_about_code',
     purpose: 'Answer natural-language questions about a cached file.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
@@ -402,6 +413,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Verify algorithms and logic in cached file using Gemini code execution sandbox.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
@@ -424,6 +436,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Google Search with Grounding. Set topic to scope results; responseStyle controls output length.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_FLASH_MS,
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     params: cloneParams(QUERY_PARAM, TOPIC_PARAM, RESPONSE_STYLE_PARAM),
@@ -442,6 +455,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Generate documentation stubs (JSDoc/TSDoc/docstrings) for all public exports in a cached file.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,
@@ -464,6 +478,7 @@ const TOOL_CONTRACTS = [
     purpose:
       'Detect structural code smells (Fowler taxonomy) in a cached file. Does not overlap with refactor_code categories.',
     model: FLASH_MODEL,
+    taskSupport: 'optional',
     timeoutMs: DEFAULT_TIMEOUT_EXTENDED_MS,
     thinkingLevel: FLASH_THINKING_LEVEL,
     maxOutputTokens: HEAVY_MAX_OUTPUT_TOKENS,

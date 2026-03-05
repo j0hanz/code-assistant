@@ -10,6 +10,7 @@ interface ToolInfoEntry {
   name: string;
   purpose: string;
   model: string;
+  taskSupport: string;
   thinkingLevel: string;
   timeout: string;
   maxOutputTokens: string;
@@ -48,6 +49,7 @@ function toToolInfoEntry(
     name: contract.name,
     purpose: contract.purpose,
     model: contract.model,
+    taskSupport: contract.taskSupport,
     thinkingLevel: formatThinkingLevel(contract.thinkingLevel),
     timeout: formatTimeoutSeconds(contract.timeoutMs),
     maxOutputTokens: formatUsNumber(contract.maxOutputTokens),
@@ -94,6 +96,9 @@ ${entry.purpose}
 ## Model
 \`${entry.model}\` (Thinking: ${entry.thinkingLevel}, Timeout: ${entry.timeout}, Tokens: ${entry.maxOutputTokens})
 
+## Execution
+- MCP task support: \`${entry.taskSupport}\`
+
 ## Parameters
 ${entry.params}
 
@@ -106,7 +111,7 @@ ${constraints.map((item) => `- ${item}`).join('\n')}
 }
 
 function formatCompactToolRow(entry: ToolInfoEntry): string {
-  return `| ${toInlineCode(entry.name)} | ${entry.model} | ${entry.timeout} | ${entry.maxOutputTokens} | ${entry.purpose} |`;
+  return `| ${toInlineCode(entry.name)} | ${entry.model} | ${toInlineCode(entry.taskSupport)} | ${entry.timeout} | ${entry.maxOutputTokens} | ${entry.purpose} |`;
 }
 
 export function buildCoreContextPack(): string {
@@ -120,11 +125,12 @@ export function buildCoreContextPack(): string {
 ## Server Essentials
 - Domain: Gemini-powered MCP server for code analysis.
 - Surface: 7 analysis tools + internal resources + guided prompts.
-- Transport: stdio with task lifecycle support.
+- Transport: stdio with task lifecycle support for task-capable tools.
+- Sync prerequisites: \`generate_diff\` and \`load_file\` are sync-only and advertise \`taskSupport: forbidden\`.
 
 ## Tool Matrix
-| Tool | Model | Timeout | Max Output Tokens | Purpose |
-|------|-------|---------|-------------------|---------|
+| Tool | Model | Task Support | Timeout | Max Output Tokens | Purpose |
+|------|-------|--------------|---------|-------------------|---------|
 ${rows.join('\n')}
 
 ## Shared Constraints

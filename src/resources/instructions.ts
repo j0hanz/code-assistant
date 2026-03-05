@@ -35,7 +35,7 @@ function formatToolSection(
   );
 
   if (contract.model === 'none') {
-    return `### \`${contract.name}\` (Sync)
+    return `### \`${contract.name}\` (Sync, taskSupport:${contract.taskSupport})
 ${contract.purpose}
 - **Params**:
 ${parameterLines.join('\n')}
@@ -51,7 +51,7 @@ ${parameterLines.join('\n')}
     .filter(Boolean)
     .join(', ');
 
-  return `### \`${contract.name}\` (${modelInfo})
+  return `### \`${contract.name}\` (${modelInfo}, taskSupport:${contract.taskSupport})
 ${contract.purpose}
 - **Params**:
 ${parameterLines.join('\n')}
@@ -71,6 +71,7 @@ export function buildServerInstructions(): string {
 ## CORE
 - Domain: Gemini-powered code analysis.
 - Capabilities: tools, resources (subscribe), prompts, logging, completions, tasks.
+- Tool task policy: \`generate_diff\` and \`load_file\` are sync-only (\`taskSupport: forbidden\`); all Gemini-backed tools advertise \`taskSupport: optional\`.
 - Tools: ${toolNames}
 
 ## PROMPTS
@@ -86,6 +87,7 @@ ${toolSections.join('\n\n')}
 ${constraintLines}
 
 ## TASK LIFECYCLE
+- Task lifecycle applies only to tools whose \`execution.taskSupport\` is task-capable.
 - Progress steps (0–6): starting → validating input → building prompt → calling model → validating response → finalizing → done.
 - Status messages update at each phase for task introspection.
 - Schema repair: on validation failure, retries with error feedback (configurable via \`GEMINI_SCHEMA_RETRIES\`).

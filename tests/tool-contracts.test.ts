@@ -52,8 +52,33 @@ describe('tool contracts', () => {
     for (const contract of contracts) {
       assert.match(contract.name, /^[A-Za-z0-9_.-]+$/);
       assert.equal(typeof contract.purpose, 'string');
+      assert.ok(
+        ['forbidden', 'optional', 'required'].includes(contract.taskSupport)
+      );
       assert.ok(Array.isArray(contract.params));
       assert.equal(typeof contract.outputShape, 'string');
+    }
+  });
+
+  it('marks sync prerequisite tools as task-forbidden and all other tools as task-optional', () => {
+    const contracts = getToolContracts();
+    const taskSupportByName = new Map(
+      contracts.map((contract) => [contract.name, contract.taskSupport])
+    );
+
+    assert.equal(taskSupportByName.get('generate_diff'), 'forbidden');
+    assert.equal(taskSupportByName.get('load_file'), 'forbidden');
+
+    for (const contract of contracts) {
+      if (contract.name === 'generate_diff' || contract.name === 'load_file') {
+        continue;
+      }
+
+      assert.equal(
+        contract.taskSupport,
+        'optional',
+        `${contract.name} should remain task-capable`
+      );
     }
   });
 
