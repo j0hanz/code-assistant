@@ -1072,11 +1072,15 @@ export function registerStructuredToolTask<
           pollInterval: taskPollIntervalMsConfig.get(),
         });
 
+        let compoundSignal: AbortSignal = extra.signal;
         if (hasCancelledTaskResultStore(extra.taskStore)) {
           await extra.taskStore.storeCancelledTaskResult(
             task.taskId,
             createCancelledTaskResult(config.errorCode, 'Task cancelled')
           );
+
+          const taskSignal = extra.taskStore.getTaskAbortSignal(task.taskId);
+          compoundSignal = AbortSignal.any([extra.signal, taskSignal]);
         }
 
         const runner = new ToolExecutionRunner(
@@ -1090,7 +1094,7 @@ export function registerStructuredToolTask<
               extra.taskStore
             ),
           },
-          extra.signal
+          compoundSignal
         );
 
         runToolTaskInBackground(
@@ -1099,7 +1103,7 @@ export function registerStructuredToolTask<
           task.taskId,
           extra.taskStore,
           config.errorCode,
-          extra.signal
+          compoundSignal
         );
 
         return {
@@ -1174,11 +1178,26 @@ function runTaskBackedToolInBackground<TInput>(
       const errorMeta = classifyErrorMeta(error, errorMessage);
       const isCancelled = errorMeta.kind === 'cancelled';
 
-      if (isCancelled && hasCancelledTaskResultStore(extra.taskStore)) {
+      if (isCancelled) {
+        if (hasCancelledTaskResultStore(extra.taskStore)) {
+          await extra.taskStore
+            .storeCancelledTaskResult(
+              taskId,
+              createCancelledTaskResult(config.errorCode, errorMessage)
+            )
+            .catch(() => {});
+        }
+      } else {
         await extra.taskStore
-          .storeCancelledTaskResult(
+          .storeTaskResult(
             taskId,
-            createCancelledTaskResult(config.errorCode, errorMessage)
+            'failed',
+            createErrorToolResponse(
+              config.errorCode,
+              errorMessage,
+              undefined,
+              errorMeta
+            )
           )
           .catch(() => {});
       }
@@ -1226,19 +1245,21 @@ export function registerTaskBackedTool<
           pollInterval: taskPollIntervalMsConfig.get(),
         });
 
+        let compoundSignal: AbortSignal = extra.signal;
         if (hasCancelledTaskResultStore(extra.taskStore)) {
           await extra.taskStore.storeCancelledTaskResult(
             task.taskId,
             createCancelledTaskResult(config.errorCode, 'Task cancelled')
           );
+
+          const taskSignal = extra.taskStore.getTaskAbortSignal(task.taskId);
+          compoundSignal = AbortSignal.any([extra.signal, taskSignal]);
         }
 
-        runTaskBackedToolInBackground(
-          config,
-          input as TInput,
-          task.taskId,
-          extra
-        );
+        runTaskBackedToolInBackground(config, input as TInput, task.taskId, {
+          ...extra,
+          signal: compoundSignal,
+        });
 
         return {
           task,

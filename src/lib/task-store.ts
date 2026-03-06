@@ -6,6 +6,7 @@ import { createErrorToolResponse } from './tool-response.js';
 
 export interface CancelledTaskResultStore extends TaskStore {
   storeCancelledTaskResult(taskId: string, result: Result): Promise<void>;
+  getTaskAbortSignal(taskId: string): AbortSignal;
   cleanup(): void;
 }
 
@@ -22,7 +23,9 @@ export function hasCancelledTaskResultStore(
 ): store is CancelledTaskResultStore {
   return (
     'storeCancelledTaskResult' in store &&
-    typeof store.storeCancelledTaskResult === 'function'
+    typeof store.storeCancelledTaskResult === 'function' &&
+    'getTaskAbortSignal' in store &&
+    typeof store.getTaskAbortSignal === 'function'
   );
 }
 
@@ -30,9 +33,19 @@ export class CodeLensTaskStore implements CancelledTaskResultStore {
   private readonly base: TaskStore;
   private readonly cancelledResults = new Map<string, Result>();
   private readonly cancelledResultTimers = new Map<string, NodeJS.Timeout>();
+  private readonly abortControllers = new Map<string, AbortController>();
 
   constructor(base: TaskStore = new InMemoryTaskStore()) {
     this.base = base;
+  }
+
+  getTaskAbortSignal(taskId: string): AbortSignal {
+    let controller = this.abortControllers.get(taskId);
+    if (!controller) {
+      controller = new AbortController();
+      this.abortControllers.set(taskId, controller);
+    }
+    return controller.signal;
   }
 
   private clearCancelledTaskResult(taskId: string): void {
@@ -43,6 +56,7 @@ export class CodeLensTaskStore implements CancelledTaskResultStore {
     }
 
     this.cancelledResults.delete(taskId);
+    this.abortControllers.delete(taskId);
   }
 
   private async scheduleCancelledTaskCleanup(taskId: string): Promise<void> {
@@ -129,8 +143,16 @@ export class CodeLensTaskStore implements CancelledTaskResultStore {
   async updateTaskStatus(
     ...args: Parameters<TaskStore['updateTaskStatus']>
   ): ReturnType<TaskStore['updateTaskStatus']> {
-    if (args[1] !== 'cancelled') {
-      this.clearCancelledTaskResult(args[0]);
+    const taskId = args[0];
+    const status = args[1];
+
+    if (status !== 'cancelled') {
+      this.clearCancelledTaskResult(taskId);
+    } else {
+      const controller = this.abortControllers.get(taskId);
+      if (controller) {
+        controller.abort(new DOMException('Task cancelled', 'AbortError'));
+      }
     }
 
     await this.base.updateTaskStatus(...args);
@@ -149,6 +171,11 @@ export class CodeLensTaskStore implements CancelledTaskResultStore {
 
     this.cancelledResultTimers.clear();
     this.cancelledResults.clear();
+
+    for (const controller of this.abortControllers.values()) {
+      controller.abort(new DOMException('Store cleanup', 'AbortError'));
+    }
+    this.abortControllers.clear();
 
     if (hasCleanup(this.base)) {
       this.base.cleanup();
