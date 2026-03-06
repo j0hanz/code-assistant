@@ -100,6 +100,11 @@ const maxTaskTtlMsConfig = createCachedEnvInt(
   'MAX_TASK_TTL_MS',
   DEFAULT_MAX_TASK_TTL_MS
 );
+const DEFAULT_TASK_POLL_INTERVAL_MS = 5_000;
+const taskPollIntervalMsConfig = createCachedEnvInt(
+  'TASK_POLL_INTERVAL_MS',
+  DEFAULT_TASK_POLL_INTERVAL_MS
+);
 
 /** Read the configured task TTL. Used by server-config for display. */
 export function getTaskTtlMs(): number {
@@ -109,6 +114,11 @@ export function getTaskTtlMs(): number {
 /** Read the configured max task TTL cap. Used by server-config for display. */
 export function getMaxTaskTtlMs(): number {
   return maxTaskTtlMsConfig.get();
+}
+
+/** Read the configured task poll interval. Used by server-config for display. */
+export function getTaskPollIntervalMs(): number {
+  return taskPollIntervalMsConfig.get();
 }
 const DETERMINISTIC_JSON_RETRY_NOTE =
   'Deterministic JSON mode: keep key names exactly as schema-defined and preserve stable field ordering.';
@@ -137,7 +147,7 @@ function buildToolAnnotations(
     return {
       readOnlyHint: true,
       idempotentHint: true,
-      openWorldHint: false,
+      openWorldHint: true,
       destructiveHint: false,
     };
   }
@@ -147,7 +157,7 @@ function buildToolAnnotations(
   return {
     readOnlyHint: !destructiveHint,
     idempotentHint: !destructiveHint,
-    openWorldHint: false,
+    openWorldHint: true,
     destructiveHint: destructiveHint ?? false,
     ...annotationOverrides,
   };
@@ -1059,6 +1069,7 @@ export function registerStructuredToolTask<
       ) => {
         const task = await extra.taskStore.createTask({
           ttl: resolveTaskTtlMs(extra.taskRequestedTtl),
+          pollInterval: taskPollIntervalMsConfig.get(),
         });
 
         if (hasCancelledTaskResultStore(extra.taskStore)) {
@@ -1212,6 +1223,7 @@ export function registerTaskBackedTool<
       ) => {
         const task = await extra.taskStore.createTask({
           ttl: resolveTaskTtlMs(extra.taskRequestedTtl),
+          pollInterval: taskPollIntervalMsConfig.get(),
         });
 
         if (hasCancelledTaskResultStore(extra.taskStore)) {

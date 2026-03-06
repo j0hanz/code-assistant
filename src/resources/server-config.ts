@@ -13,6 +13,7 @@ import {
 } from '../lib/gemini/config.js';
 import {
   getMaxTaskTtlMs,
+  getTaskPollIntervalMs,
   getTaskTtlMs,
   getToolContracts,
 } from '../lib/tools.js';
@@ -44,6 +45,7 @@ export function buildServerConfig(): string {
   const concurrentWaitMs = concurrencyWaitMsConfig.get();
   const taskTtlMs = getTaskTtlMs();
   const maxTaskTtlMs = getMaxTaskTtlMs();
+  const taskPollIntervalMs = getTaskPollIntervalMs();
   const defaultModel = getModelOverride();
   const batchMode = getBatchMode();
   const safetyThreshold = getSafetyThreshold();
@@ -66,6 +68,7 @@ export function buildServerConfig(): string {
 | Wait timeout | ${formatUsNumber(concurrentWaitMs)}ms | ${toInlineCode('MAX_CONCURRENT_CALLS_WAIT_MS')} |
 | Default task TTL | ${formatUsNumber(taskTtlMs)}ms | ${toInlineCode('TASK_TTL_MS')} |
 | Max task TTL | ${maxTaskTtlMs === 0 ? 'unlimited' : `${formatUsNumber(maxTaskTtlMs)}ms`} | ${toInlineCode('MAX_TASK_TTL_MS')} |
+| Task poll interval | ${formatUsNumber(taskPollIntervalMs)}ms | ${toInlineCode('TASK_POLL_INTERVAL_MS')} |
 | Batch mode | ${batchMode} | ${toInlineCode('GEMINI_BATCH_MODE')} |
 
 ## Model Assignments
@@ -96,5 +99,6 @@ ${toolRows}
 - Requestors may provide a task TTL; the server honors it up to ${toInlineCode('MAX_TASK_TTL_MS')}.
 - If the request does not specify a TTL, the server uses ${toInlineCode('TASK_TTL_MS')}.
 - Set ${toInlineCode('MAX_TASK_TTL_MS')} to ${toInlineCode('0')} to disable the cap.
+- Created tasks include ${toInlineCode('pollInterval')} (${toInlineCode('TASK_POLL_INTERVAL_MS')}) to guide client polling cadence.
 `;
 }

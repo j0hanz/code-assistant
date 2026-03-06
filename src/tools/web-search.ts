@@ -128,12 +128,6 @@ export function registerWebSearchTool(server: McpServer): void {
     resultSchema: WebSearchResultSchema,
     errorCode: 'E_WEB_SEARCH',
     ...buildStructuredToolExecutionOptions(TOOL_CONTRACT),
-    annotations: {
-      readOnlyHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
-      destructiveHint: false,
-    },
     progressContext: (input) => input.query.slice(0, 60),
     formatOutput: (result) => result.text.slice(0, 200),
     buildPrompt: (input) => ({

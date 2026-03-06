@@ -77,12 +77,6 @@ export function registerVerifyLogicTool(server: McpServer): void {
     errorCode: 'E_VERIFY_LOGIC',
     ...buildStructuredToolExecutionOptions(TOOL_CONTRACT),
     requiresFile: true,
-    annotations: {
-      readOnlyHint: true,
-      idempotentHint: true,
-      openWorldHint: true,
-      destructiveHint: false,
-    },
     progressContext: (input) => input.question.slice(0, 60),
     formatOutcome: (result) =>
       `${result.verified ? 'verified' : 'unverified'}, ${result.codeBlocks.length} code samples`,

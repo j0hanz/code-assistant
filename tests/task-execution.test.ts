@@ -4,7 +4,11 @@ import { afterEach, describe, it } from 'node:test';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolResultSchema,
+  RELATED_TASK_META_KEY,
+  TaskStatusNotificationSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 import { CodeLensTaskStore } from '../src/lib/task-store.js';
@@ -157,5 +161,126 @@ describe('task execution lifecycle', () => {
     assert.match(firstText, /Task cancelled|cancelled/i);
 
     await stream.return(undefined);
+  });
+
+  it('created task includes pollInterval from server config', async () => {
+    const handle = await createTaskTestServer();
+    close = handle.close;
+
+    const stream = handle.client.experimental.tasks.callToolStream(
+      {
+        name: 'slow_tool',
+        arguments: { waitMs: 200 },
+      },
+      CallToolResultSchema,
+      { task: { ttl: 10_000 } }
+    );
+
+    const firstMessage = await stream.next();
+    assert.equal(firstMessage.done, false);
+
+    const created = firstMessage.value as {
+      type: string;
+      task: { taskId: string; pollInterval?: number };
+    };
+    assert.equal(created.type, 'taskCreated');
+    assert.equal(typeof created.task.pollInterval, 'number');
+    assert.ok(
+      created.task.pollInterval! > 0,
+      'pollInterval should be positive'
+    );
+
+    await stream.return(undefined);
+  });
+
+  it('tasks/result includes related-task metadata injected by SDK', async () => {
+    const handle = await createTaskTestServer();
+    close = handle.close;
+
+    const stream = handle.client.experimental.tasks.callToolStream(
+      {
+        name: 'slow_tool',
+        arguments: { waitMs: 50 },
+      },
+      CallToolResultSchema,
+      { task: { ttl: 10_000 } }
+    );
+
+    const firstMessage = await stream.next();
+    assert.equal(firstMessage.done, false);
+
+    const created = firstMessage.value as {
+      type: string;
+      task: { taskId: string };
+    };
+    assert.equal(created.type, 'taskCreated');
+    const taskId = created.task.taskId;
+
+    // Wait for completion via status messages
+    let lastMessage: { type: string } | undefined;
+    for await (const message of stream) {
+      lastMessage = message as { type: string };
+      if (lastMessage.type === 'result') break;
+    }
+
+    const result = await handle.client.experimental.tasks.getTaskResult(
+      taskId,
+      CallToolResultSchema
+    );
+
+    // SDK should inject related-task metadata
+    const meta = (result as Record<string, unknown>)._meta as
+      | Record<string, unknown>
+      | undefined;
+    assert.ok(meta, 'result should include _meta');
+    const relatedTask = meta[RELATED_TASK_META_KEY] as
+      | { taskId: string }
+      | undefined;
+    assert.ok(relatedTask, 'result _meta should include related-task key');
+    assert.equal(relatedTask.taskId, taskId);
+  });
+
+  it('emits notifications/tasks/status on task status changes', async () => {
+    const handle = await createTaskTestServer();
+    close = handle.close;
+
+    const statusUpdates: Array<{ taskId: string; status: string }> = [];
+    handle.client.setNotificationHandler(
+      TaskStatusNotificationSchema,
+      (notification) => {
+        statusUpdates.push({
+          taskId: notification.params.taskId,
+          status: notification.params.status,
+        });
+      }
+    );
+
+    const stream = handle.client.experimental.tasks.callToolStream(
+      {
+        name: 'slow_tool',
+        arguments: { waitMs: 50 },
+      },
+      CallToolResultSchema,
+      { task: { ttl: 10_000 } }
+    );
+
+    // Consume entire stream to completion
+    for await (const message of stream) {
+      const msg = message as { type: string };
+      if (msg.type === 'result' || msg.type === 'error') break;
+    }
+
+    // Give notifications time to propagate
+    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+
+    assert.ok(
+      statusUpdates.length > 0,
+      'should receive at least one status notification'
+    );
+
+    const terminalUpdate = statusUpdates.find(
+      (u) => u.status === 'completed' || u.status === 'failed'
+    );
+    assert.ok(terminalUpdate, 'should include a terminal status notification');
   });
 });
