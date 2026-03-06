@@ -614,12 +614,12 @@ class ToolExecutionRunner<
     if (record.event === 'gemini_retry') {
       const details = asObjectRecord(record.details);
       const { attempt } = details;
-      const msg = `retrying (attempt ${String(attempt)})`;
-
-      await this.reporter.reportStep(STEP_CALLING_MODEL, msg);
+      await this.reporter.reportStep(
+        STEP_CALLING_MODEL,
+        `retrying (${String(attempt)})`
+      );
     } else if (record.event === 'gemini_queue_acquired') {
-      const msg = 'waiting for model';
-      await this.reporter.reportStep(STEP_CALLING_MODEL, msg);
+      await this.reporter.reportStep(STEP_CALLING_MODEL, 'queued');
     }
   }
 
@@ -679,7 +679,7 @@ class ToolExecutionRunner<
     if (attempt === 0) {
       await this.reporter.reportStep(
         STEP_VALIDATING_RESPONSE,
-        'parsing response'
+        'processing results'
       );
     }
 
@@ -819,8 +819,6 @@ class ToolExecutionRunner<
 
   async run(input: unknown): Promise<CallToolResult> {
     try {
-      await this.reporter.reportStep(STEP_STARTING, 'starting');
-
       const inputRecord = parseToolInput<TInput>(
         input,
         this.config.fullInputSchema
@@ -831,11 +829,13 @@ class ToolExecutionRunner<
       );
       this.reporter.updateContext(newContext);
 
+      await this.reporter.reportStep(STEP_STARTING, 'starting');
+
       const ctx = this.createExecutionContext();
       this.executionCtx = ctx;
 
       this.throwIfAborted();
-      await this.reporter.reportStep(STEP_VALIDATING, 'validating input');
+      await this.reporter.reportStep(STEP_VALIDATING, 'validating');
 
       const validationError = await this.executeValidation(inputRecord, ctx);
       if (validationError) {
@@ -843,7 +843,7 @@ class ToolExecutionRunner<
       }
 
       this.throwIfAborted();
-      await this.reporter.reportStep(STEP_BUILDING_PROMPT, 'preparing prompt');
+      await this.reporter.reportStep(STEP_BUILDING_PROMPT, 'preparing');
 
       const promptParts = this.config.buildPrompt(inputRecord, ctx);
       const { prompt, systemInstruction } = promptParts;
@@ -862,7 +862,7 @@ class ToolExecutionRunner<
       }
 
       this.throwIfAborted();
-      await this.reporter.reportStep(STEP_FINALIZING, 'finalizing');
+      await this.reporter.reportStep(STEP_FINALIZING, 'wrapping up');
 
       const finalResult = this.applyResultTransform(inputRecord, parsed, ctx);
       this.throwIfAborted();

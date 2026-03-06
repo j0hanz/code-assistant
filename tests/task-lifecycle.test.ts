@@ -183,8 +183,8 @@ describe('task lifecycle', () => {
       await reporter.updateStatus('done');
 
       assert.equal(calls.updateStatus.length, 2);
-      assert.equal(calls.updateStatus[0], 'working');
-      assert.equal(calls.updateStatus[1], 'done');
+      assert.equal(calls.updateStatus[0], 'test_tool: working');
+      assert.equal(calls.updateStatus[1], 'test_tool: done');
     });
   });
 

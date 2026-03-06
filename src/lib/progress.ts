@@ -263,7 +263,7 @@ async function reportSchemaRetryProgressBestEffort(
       toolName,
       context,
       STEP_VALIDATING_RESPONSE + retryCount / (maxRetries + 1),
-      `retrying response (${retryCount}/${maxRetries})`
+      `refining (${retryCount}/${maxRetries})`
     );
   } catch {
     // Progress updates are best-effort and must not interrupt retries.
@@ -296,13 +296,14 @@ export class RunReporter {
   ) {}
 
   async updateStatus(message: string): Promise<void> {
-    if (this.lastStatusMessage === message) {
+    const prefixed = `${this.toolName}: ${message}`;
+    if (this.lastStatusMessage === prefixed) {
       return;
     }
 
     try {
-      await this.statusReporter.updateStatus(message);
-      this.lastStatusMessage = message;
+      await this.statusReporter.updateStatus(prefixed);
+      this.lastStatusMessage = prefixed;
     } catch {
       // Best-effort
     }
