@@ -1,6 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import parseDiff from 'parse-diff';
-import type { File as ParsedFile } from 'parse-diff';
+import { parsePatch, type StructuredPatch as ParsedFile } from 'diff';
 
 import { createCachedEnvInt, startCleanupTimer } from './config.js';
 import { formatUsNumber } from './format.js';
@@ -167,7 +166,7 @@ export interface DiffStats {
 }
 
 export function parseDiffFiles(diff: string): ParsedFile[] {
-  return diff ? parseDiff(diff) : [];
+  return diff ? parsePatch(diff) : [];
 }
 
 function cleanPath(path: string): string {
@@ -178,8 +177,8 @@ function cleanPath(path: string): string {
 }
 
 function resolveChangedPath(file: ParsedFile): string | undefined {
-  if (file.to && file.to !== '/dev/null') return cleanPath(file.to);
-  if (file.from && file.from !== '/dev/null') return cleanPath(file.from);
+  if (file.newFileName && file.newFileName !== '/dev/null') return cleanPath(file.newFileName);
+  if (file.oldFileName && file.oldFileName !== '/dev/null') return cleanPath(file.oldFileName);
   return undefined;
 }
 
@@ -191,14 +190,27 @@ function isNoFiles(files: readonly ParsedFile[]): boolean {
   return files.length === 0;
 }
 
-function calculateStats(files: readonly ParsedFile[]): DiffStats {
+function getFileStats(file: ParsedFile): { added: number; deleted: number } {
   let added = 0;
   let deleted = 0;
-  for (const file of files) {
-    added += file.additions;
-    deleted += file.deletions;
+  for (const hunk of file.hunks) {
+    for (const line of hunk.lines) {
+      if (line.startsWith('+')) added++;
+      else if (line.startsWith('-')) deleted++;
+    }
   }
-  return { files: files.length, added, deleted };
+  return { added, deleted };
+}
+
+function calculateStats(files: readonly ParsedFile[]): DiffStats {
+  let totalAdded = 0;
+  let totalDeleted = 0;
+  for (const file of files) {
+    const fileStats = getFileStats(file);
+    totalAdded += fileStats.added;
+    totalDeleted += fileStats.deleted;
+  }
+  return { files: files.length, added: totalAdded, deleted: totalDeleted };
 }
 
 function getUniquePaths(files: readonly ParsedFile[]): Set<string> {
@@ -216,7 +228,8 @@ function buildFileSummaryList(
 ): string[] {
   return files.slice(0, maxFiles).map((file) => {
     const path = resolveChangedPath(file) ?? UNKNOWN_PATH;
-    return `${path} (+${Math.max(0, file.additions)} -${Math.max(0, file.deletions)})`;
+    const fileStats = getFileStats(file);
+    return `${path} (+${Math.max(0, fileStats.added)} -${Math.max(0, fileStats.deleted)})`;
   });
 }
 
