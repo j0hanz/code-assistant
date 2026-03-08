@@ -32,10 +32,6 @@ const SERVER_CAPABILITIES = {
   completions: {},
   prompts: {},
   resources: { subscribe: true },
-  /**
-   * Tools are registered statically at startup. If dynamic tool registration is
-   * ever added, flip to `true` and emit `notifications/tools/list_changed`.
-   */
   tools: { listChanged: false },
   tasks: {
     list: {},
