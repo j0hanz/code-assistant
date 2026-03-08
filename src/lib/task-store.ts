@@ -72,8 +72,7 @@ export class CodeLensTaskStore implements CancelledTaskResultStore {
     }
 
     const timer = setTimeout(() => {
-      this.cancelledResults.delete(taskId);
-      this.cancelledResultTimers.delete(taskId);
+      this.clearCancelledTaskResult(taskId);
     }, ttl);
     timer.unref();
 

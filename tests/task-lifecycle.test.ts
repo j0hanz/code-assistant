@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 import {
   createFailureStatusMessage,
@@ -7,6 +8,8 @@ import {
   RunReporter,
   type TaskStatusReporter,
 } from '../src/lib/progress.js';
+import { CodeLensTaskStore } from '../src/lib/task-store.js';
+import { createErrorToolResponse } from '../src/lib/tool-response.js';
 
 function createMockReporter(): {
   statusReporter: TaskStatusReporter;
@@ -206,6 +209,47 @@ describe('task lifecycle', () => {
       const err = new DOMException('Task cancelled', 'AbortError');
       assert.equal(err.name, 'AbortError');
       assert.equal(err.message, 'Task cancelled');
+    });
+  });
+
+  describe('CodeLensTaskStore cancellation cleanup', () => {
+    it('releases cancelled-task resources after TTL expiry', async () => {
+      const store = new CodeLensTaskStore();
+      const taskStore = store as unknown as {
+        createTask: (taskParams: {
+          ttl: number;
+        }) => Promise<{ taskId: string }>;
+      };
+      const task = await taskStore.createTask({ ttl: 25 });
+      const signal = store.getTaskAbortSignal(task.taskId);
+      const internals = store as unknown as {
+        abortControllers: Map<string, AbortController>;
+        cancelledResults: Map<string, unknown>;
+        cancelledResultTimers: Map<string, NodeJS.Timeout>;
+      };
+
+      await store.updateTaskStatus(
+        task.taskId,
+        'cancelled',
+        'cancelled in test'
+      );
+      await store.storeCancelledTaskResult(
+        task.taskId,
+        createErrorToolResponse('E_TASK_CANCELLED', 'Task cancelled')
+      );
+
+      assert.equal(signal.aborted, true);
+      assert.equal(internals.abortControllers.has(task.taskId), true);
+      assert.equal(internals.cancelledResults.has(task.taskId), true);
+      assert.equal(internals.cancelledResultTimers.has(task.taskId), true);
+
+      await sleep(60);
+
+      assert.equal(internals.abortControllers.has(task.taskId), false);
+      assert.equal(internals.cancelledResults.has(task.taskId), false);
+      assert.equal(internals.cancelledResultTimers.has(task.taskId), false);
+
+      store.cleanup();
     });
   });
 });
