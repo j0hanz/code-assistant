@@ -1,5 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { parsePatch, type StructuredPatch as ParsedFile } from 'diff';
+import { type StructuredPatch as ParsedFile, parsePatch } from 'diff';
 
 import { createCachedEnvInt, startCleanupTimer } from './config.js';
 import { formatUsNumber } from './format.js';
@@ -84,6 +84,7 @@ const BINARY_FILE_LINE = /^Binary files .+ differ$/m;
 const GIT_BINARY_PATCH = /^GIT binary patch/m;
 const HAS_HUNK = /^@@/m;
 const HAS_OLD_MODE = /^old mode /m;
+const DIFF_SECTION_BOUNDARY = '\ndiff --git ';
 
 function shouldKeepSection(section: string): boolean {
   return (
@@ -113,15 +114,18 @@ function extractAllSections(
   sections: string[],
   firstIndex: number
 ): void {
-  let lastIndex = 0;
-  let nextIndex = firstIndex;
-  while (nextIndex !== -1) {
-    const matchIndex = nextIndex === 0 ? 0 : nextIndex + 1; // +1 to skip \n
-    processSection(raw, lastIndex, matchIndex, sections);
-    lastIndex = matchIndex;
-    nextIndex = raw.indexOf('\ndiff --git ', lastIndex);
+  let sectionStart = 0;
+  let boundaryIndex = firstIndex;
+
+  while (boundaryIndex !== -1) {
+    const nextSectionStart = boundaryIndex === 0 ? 0 : boundaryIndex + 1;
+
+    processSection(raw, sectionStart, nextSectionStart, sections);
+    sectionStart = nextSectionStart;
+    boundaryIndex = raw.indexOf(DIFF_SECTION_BOUNDARY, sectionStart);
   }
-  processSection(raw, lastIndex, raw.length, sections);
+
+  processSection(raw, sectionStart, raw.length, sections);
 }
 
 export function cleanDiff(raw: string): string {
@@ -130,7 +134,7 @@ export function cleanDiff(raw: string): string {
   const sections: string[] = [];
   const nextIndex = raw.startsWith('diff --git ')
     ? 0
-    : raw.indexOf('\ndiff --git ');
+    : raw.indexOf(DIFF_SECTION_BOUNDARY);
 
   if (nextIndex === -1) {
     processSection(raw, 0, raw.length, sections);
@@ -177,8 +181,10 @@ function cleanPath(path: string): string {
 }
 
 function resolveChangedPath(file: ParsedFile): string | undefined {
-  if (file.newFileName && file.newFileName !== '/dev/null') return cleanPath(file.newFileName);
-  if (file.oldFileName && file.oldFileName !== '/dev/null') return cleanPath(file.oldFileName);
+  if (file.newFileName && file.newFileName !== '/dev/null')
+    return cleanPath(file.newFileName);
+  if (file.oldFileName && file.oldFileName !== '/dev/null')
+    return cleanPath(file.oldFileName);
   return undefined;
 }
 
@@ -188,6 +194,17 @@ function sortPaths(paths: Iterable<string>): string[] {
 
 function isNoFiles(files: readonly ParsedFile[]): boolean {
   return files.length === 0;
+}
+
+interface AggregateFilesOptions {
+  includePaths?: boolean;
+  summaryLimit?: number;
+}
+
+interface AggregatedDiffData {
+  stats: DiffStats;
+  paths: string[];
+  summaries: string[];
 }
 
 function getFileStats(file: ParsedFile): { added: number; deleted: number } {
@@ -202,35 +219,38 @@ function getFileStats(file: ParsedFile): { added: number; deleted: number } {
   return { added, deleted };
 }
 
-function calculateStats(files: readonly ParsedFile[]): DiffStats {
+function aggregateFiles(
+  files: readonly ParsedFile[],
+  options: AggregateFilesOptions = {}
+): Readonly<AggregatedDiffData> {
+  const { includePaths = false, summaryLimit = 0 } = options;
   let totalAdded = 0;
   let totalDeleted = 0;
-  for (const file of files) {
+  const paths = includePaths ? new Set<string>() : undefined;
+  const summaries: string[] = [];
+
+  files.forEach((file, index) => {
     const fileStats = getFileStats(file);
     totalAdded += fileStats.added;
     totalDeleted += fileStats.deleted;
-  }
-  return { files: files.length, added: totalAdded, deleted: totalDeleted };
-}
 
-function getUniquePaths(files: readonly ParsedFile[]): Set<string> {
-  const paths = new Set<string>();
-  for (const file of files) {
     const path = resolveChangedPath(file);
-    if (path) paths.add(path);
-  }
-  return paths;
-}
+    if (path) {
+      paths?.add(path);
+    }
 
-function buildFileSummaryList(
-  files: readonly ParsedFile[],
-  maxFiles = 40
-): string[] {
-  return files.slice(0, maxFiles).map((file) => {
-    const path = resolveChangedPath(file) ?? UNKNOWN_PATH;
-    const fileStats = getFileStats(file);
-    return `${path} (+${Math.max(0, fileStats.added)} -${Math.max(0, fileStats.deleted)})`;
+    if (index < summaryLimit) {
+      summaries.push(
+        `${path ?? UNKNOWN_PATH} (+${fileStats.added} -${fileStats.deleted})`
+      );
+    }
   });
+
+  return {
+    stats: { files: files.length, added: totalAdded, deleted: totalDeleted },
+    paths: paths ? sortPaths(paths) : EMPTY_PATHS,
+    summaries,
+  };
 }
 
 export function computeDiffStatsAndSummaryFromFiles(
@@ -240,8 +260,9 @@ export function computeDiffStatsAndSummaryFromFiles(
     return { stats: EMPTY_DIFF_STATS, summary: NO_FILES_CHANGED };
   }
 
-  const stats = calculateStats(files);
-  const summaries = buildFileSummaryList(files, MAX_SUMMARY_FILES);
+  const { stats, summaries } = aggregateFiles(files, {
+    summaryLimit: MAX_SUMMARY_FILES,
+  });
 
   if (files.length > MAX_SUMMARY_FILES) {
     summaries.push(`... and ${files.length - MAX_SUMMARY_FILES} more files`);
@@ -259,14 +280,13 @@ export function computeDiffStatsAndPathsFromFiles(
   if (isNoFiles(files)) {
     return { stats: EMPTY_DIFF_STATS, paths: EMPTY_PATHS };
   }
-  const stats = calculateStats(files);
-  const paths = sortPaths(getUniquePaths(files));
+  const { stats, paths } = aggregateFiles(files, { includePaths: true });
   return { stats, paths };
 }
 
 function extractChangedPathsFromFiles(files: readonly ParsedFile[]): string[] {
   if (isNoFiles(files)) return EMPTY_PATHS;
-  return sortPaths(getUniquePaths(files));
+  return aggregateFiles(files, { includePaths: true }).paths;
 }
 
 export function extractChangedPaths(diff: string): string[] {
@@ -277,7 +297,7 @@ export function computeDiffStatsFromFiles(
   files: readonly ParsedFile[]
 ): Readonly<DiffStats> {
   if (isNoFiles(files)) return EMPTY_DIFF_STATS;
-  return calculateStats(files);
+  return aggregateFiles(files).stats;
 }
 
 export function computeDiffStats(diff: string): Readonly<DiffStats> {

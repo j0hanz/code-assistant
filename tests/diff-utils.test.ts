@@ -124,6 +124,23 @@ describe('diff cleaning and parsing', () => {
     assert.doesNotMatch(cleaned, /mode-only\.sh/);
   });
 
+  it('preserves rename-only and copy-only sections during cleaning', () => {
+    const raw = [
+      'diff --git a/old-name.ts b/new-name.ts',
+      'similarity index 100%',
+      'rename from old-name.ts',
+      'rename to new-name.ts',
+      'diff --git a/source.ts b/copied.ts',
+      'similarity index 100%',
+      'copy from source.ts',
+      'copy to copied.ts',
+    ].join('\n');
+
+    const cleaned = cleanDiff(raw);
+    assert.match(cleaned, /rename to new-name\.ts/);
+    assert.match(cleaned, /copy to copied\.ts/);
+  });
+
   it('computes stats and changed paths from parsed diff files', () => {
     const diff = buildDiff(2);
 
@@ -141,6 +158,54 @@ describe('diff cleaning and parsing', () => {
     const fromFiles = computeDiffStatsAndPathsFromFiles(files);
     assert.deepEqual(fromFiles.paths, ['file-0.ts', 'file-1.ts']);
     assert.deepEqual(fromFiles.stats, stats);
+  });
+
+  it('handles documented rename, copy, add, delete, and no-newline patch forms', () => {
+    const diff = [
+      'diff --git a/old-name.ts b/new-name.ts',
+      'similarity index 100%',
+      'rename from old-name.ts',
+      'rename to new-name.ts',
+      'diff --git a/source.ts b/copied.ts',
+      'similarity index 100%',
+      'copy from source.ts',
+      'copy to copied.ts',
+      'diff --git a/added.ts b/added.ts',
+      'new file mode 100644',
+      '--- /dev/null',
+      '+++ b/added.ts',
+      '@@ -0,0 +1 @@',
+      '+const added = true;',
+      'diff --git a/removed.ts b/removed.ts',
+      'deleted file mode 100644',
+      '--- a/removed.ts',
+      '+++ /dev/null',
+      '@@ -1 +0,0 @@',
+      '-const removed = true;',
+      'diff --git a/no-newline.txt b/no-newline.txt',
+      '--- a/no-newline.txt',
+      '+++ b/no-newline.txt',
+      '@@ -1 +1 @@',
+      '-old line',
+      '\\ No newline at end of file',
+      '+new line',
+      '\\ No newline at end of file',
+    ].join('\n');
+
+    const files = parseDiffFiles(diff);
+    const stats = computeDiffStats(diff);
+
+    assert.equal(files.length, 3);
+    assert.deepEqual(extractChangedPaths(diff), [
+      'added.ts',
+      'no-newline.txt',
+      'removed.ts',
+    ]);
+    assert.deepEqual(computeDiffStatsAndPathsFromFiles(files), {
+      stats,
+      paths: ['added.ts', 'no-newline.txt', 'removed.ts'],
+    });
+    assert.deepEqual(stats, { files: 3, added: 2, deleted: 2 });
   });
 
   it('truncates long summaries after 40 files', () => {
