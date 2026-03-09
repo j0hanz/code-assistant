@@ -74,7 +74,7 @@ export function registerGenerateTestPlanTool(server: McpServer): void {
       return { ...result, testCases: cappedTestCases };
     },
     buildPrompt: (input, ctx) => {
-      const { diff, parsedFiles } = getDiffContextSnapshot(ctx);
+      const { diff, parsedFiles, repository } = getDiffContextSnapshot(ctx);
       const { stats, paths } = computeDiffStatsAndPathsFromFiles(parsedFiles);
       const optionalLines = formatOptionalLines([
         { label: 'Language', value: input.language },
@@ -85,7 +85,7 @@ export function registerGenerateTestPlanTool(server: McpServer): void {
       return {
         systemInstruction: SYSTEM_INSTRUCTION,
         prompt: `
-Repository: ${input.repository}${optionalLines}
+Repository: ${repository}${optionalLines}
 Stats: ${stats.files} files, +${stats.added}, -${stats.deleted}
 Changed Files: ${paths.join(', ')}
 

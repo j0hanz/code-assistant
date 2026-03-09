@@ -147,14 +147,6 @@ const MODE_PARAM = createParam(
   "'unstaged': working tree changes not yet staged. 'staged': changes added to the index (git add)."
 );
 
-const REPOSITORY_PARAM = createParam(
-  'repository',
-  'string',
-  true,
-  '1-200 chars',
-  'Repository identifier (org/repo).'
-);
-
 const LANGUAGE_PARAM = createParam(
   'language',
   'string',
@@ -246,7 +238,7 @@ const TOOL_CONTRACTS = [
     maxOutputTokens: 0,
     params: cloneParams(MODE_PARAM),
     outputShape:
-      '{ok, result: {diffRef, stats{files, added, deleted}, generatedAt, mode, message}}',
+      '{ok, result: {diffRef, stats{files, added, deleted}, generatedAt, mode, repository, message}}',
     gotchas: [
       'Must be called first — all other tools return E_NO_DIFF if no diff is cached.',
       'Noisy files (lock files, dist/, build/, minified assets) are excluded automatically.',
@@ -254,6 +246,7 @@ const TOOL_CONTRACTS = [
     ],
     crossToolFlow: [
       'Caches diff at internal://diff/current — consumed automatically by all review tools.',
+      'Auto-infers repository (owner/repo) from git remote origin.',
     ],
   },
   {
@@ -267,7 +260,7 @@ const TOOL_CONTRACTS = [
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: TRIAGE_TEMPERATURE,
     deterministicJson: true,
-    params: cloneParams(REPOSITORY_PARAM, LANGUAGE_PARAM),
+    params: cloneParams(LANGUAGE_PARAM),
     outputShape:
       '{severity, categories[], summary, breakingChanges[], affectedAreas[], rollbackComplexity}',
     gotchas: [
@@ -289,7 +282,7 @@ const TOOL_CONTRACTS = [
     maxOutputTokens: DEFAULT_MAX_OUTPUT_TOKENS,
     temperature: TRIAGE_TEMPERATURE,
     deterministicJson: true,
-    params: cloneParams(REPOSITORY_PARAM, LANGUAGE_PARAM),
+    params: cloneParams(LANGUAGE_PARAM),
     outputShape:
       '{summary, overallRisk, keyChanges[], recommendation, stats{filesChanged, linesAdded, linesRemoved}}',
     gotchas: [
@@ -312,7 +305,6 @@ const TOOL_CONTRACTS = [
     temperature: CREATIVE_TEMPERATURE,
     deterministicJson: true,
     params: cloneParams(
-      REPOSITORY_PARAM,
       LANGUAGE_PARAM,
       TEST_FRAMEWORK_PARAM,
       MAX_TEST_CASES_PARAM

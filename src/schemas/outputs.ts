@@ -563,6 +563,7 @@ export const GenerateDiffResultSchema = z.strictObject({
     .describe('Diff statistics.'),
   generatedAt: z.string().describe('ISO 8601 timestamp.'),
   mode: z.enum(DIFF_MODES).describe('Diff mode used.'),
+  repository: z.string().describe('Auto-inferred repository (owner/repo).'),
   message: z.string().describe('Human-readable summary.'),
   elapsedMs: z.int().min(0).describe('Time taken to generate diff in ms.'),
 });

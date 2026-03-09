@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   createNoDiffError,
   DIFF_RESOURCE_URI,
+  disposeDiffStore,
   getDiff,
   hasDiff,
   initDiffStore,
@@ -20,6 +21,7 @@ function createSlot(generatedAt: string) {
     generatedAt,
     generatedAtMs: new Date(generatedAt).getTime(),
     mode: 'unstaged',
+    repository: 'owner/repo',
   };
 }
 
@@ -86,6 +88,41 @@ describe('diff-store', () => {
     assert.equal(calls[1], `second:${DIFF_RESOURCE_URI}`);
 
     setDiffForTesting(undefined, key);
+  });
+
+  it('notifies subscribers when timer-driven cleanup expires the current diff', () => {
+    const calls: string[] = [];
+    const originalSetInterval = global.setInterval;
+    const originalClearInterval = global.clearInterval;
+    const fakeTimer = { unref() {} } as NodeJS.Timeout;
+    let cleanupCallback: (() => void) | undefined;
+
+    global.setInterval = ((callback: () => void) => {
+      cleanupCallback = callback;
+      return fakeTimer;
+    }) as typeof setInterval;
+    global.clearInterval = (() => {}) as typeof clearInterval;
+
+    try {
+      initDiffStore({
+        server: {
+          sendResourceUpdated: async ({ uri }: { uri: string }) => {
+            calls.push(uri);
+          },
+        },
+      } as never);
+
+      setDiffForTesting(createSlot('2000-01-01T00:00:00.000Z'));
+      cleanupCallback?.();
+
+      assert.equal(getDiff(), undefined);
+      assert.deepEqual(calls, [DIFF_RESOURCE_URI]);
+    } finally {
+      disposeDiffStore();
+      setDiffForTesting(undefined);
+      global.setInterval = originalSetInterval;
+      global.clearInterval = originalClearInterval;
+    }
   });
 
   it('creates a no-diff validation error payload', () => {

@@ -2,6 +2,7 @@ import {
   type McpServer,
   ResourceTemplate,
 } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 
 import { DIFF_RESOURCE_URI, getDiff } from '../lib/diff.js';
 import { getFile, SOURCE_RESOURCE_URI } from '../lib/file-store.js';
@@ -51,10 +52,6 @@ function createResourceAnnotations(
     annotations.lastModified = lastModified;
   }
   return annotations;
-}
-
-function formatUnknownToolMessage(name: string): string {
-  return `Unknown tool: ${name}`;
 }
 
 function formatDiffResourceText(): string {
@@ -160,8 +157,14 @@ function registerToolInfoResources(server: McpServer): void {
     (uri: URL, { toolName }: { toolName?: string }) => {
       const name = typeof toolName === 'string' ? toolName : '';
       const info = getToolInfo(name);
-      const text = info ?? formatUnknownToolMessage(name);
-      return { contents: [createMarkdownContent(uri, text)] };
+      if (!info) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Resource ${uri.href} not found`
+        );
+      }
+
+      return { contents: [createMarkdownContent(uri, info)] };
     }
   );
 }

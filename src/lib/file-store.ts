@@ -89,6 +89,7 @@ export function initFileStore(server: McpServer): void {
       Date.now() - currentSlot.cachedAt > fileCacheTtlMs.get()
     ) {
       currentSlot = undefined;
+      notifyFileUpdated();
     }
   });
 }

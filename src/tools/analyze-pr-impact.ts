@@ -93,16 +93,16 @@ export function registerAnalyzePrImpactTool(server: McpServer): void {
 
       return lines.join('\n');
     },
-    buildPrompt: (input, ctx) => {
-      const { diff, parsedFiles } = getDiffContextSnapshot(ctx);
+    buildPrompt: (_input, ctx) => {
+      const { diff, parsedFiles, repository } = getDiffContextSnapshot(ctx);
       const { stats, summary: fileSummary } =
         computeDiffStatsAndSummaryFromFiles(parsedFiles);
-      const languageSegment = formatLanguageSegment(input.language);
+      const languageSegment = formatLanguageSegment(_input.language);
 
       return {
         systemInstruction: SYSTEM_INSTRUCTION,
         prompt: `
-Repository: ${input.repository}${languageSegment}
+Repository: ${repository}${languageSegment}
 Change Stats: ${stats.files} files, +${stats.added} lines, -${stats.deleted} lines.
 Changed Files:
 ${fileSummary}

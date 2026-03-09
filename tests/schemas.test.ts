@@ -35,29 +35,18 @@ import {
 describe('input schemas', () => {
   it('AnalyzePrImpactInputSchema accepts valid input', () => {
     const result = AnalyzePrImpactInputSchema.safeParse({
-      repository: 'owner/repo',
       language: 'TypeScript',
     });
     assert.equal(result.success, true);
   });
 
-  it('AnalyzePrImpactInputSchema accepts minimal input', () => {
-    const result = AnalyzePrImpactInputSchema.safeParse({
-      repository: 'x',
-    });
+  it('AnalyzePrImpactInputSchema accepts minimal input (no params)', () => {
+    const result = AnalyzePrImpactInputSchema.safeParse({});
     assert.equal(result.success, true);
-  });
-
-  it('AnalyzePrImpactInputSchema rejects empty repository', () => {
-    const result = AnalyzePrImpactInputSchema.safeParse({
-      repository: '',
-    });
-    assert.equal(result.success, false);
   });
 
   it('AnalyzePrImpactInputSchema rejects unknown fields', () => {
     const result = AnalyzePrImpactInputSchema.safeParse({
-      repository: 'owner/repo',
       unknown: true,
     });
     assert.equal(result.success, false);
@@ -65,19 +54,16 @@ describe('input schemas', () => {
 
   it('GenerateTestPlanInputSchema validates maxTestCases bounds', () => {
     const tooLow = GenerateTestPlanInputSchema.safeParse({
-      repository: 'owner/repo',
       maxTestCases: 0,
     });
     assert.equal(tooLow.success, false);
 
     const tooHigh = GenerateTestPlanInputSchema.safeParse({
-      repository: 'owner/repo',
       maxTestCases: 31,
     });
     assert.equal(tooHigh.success, false);
 
     const valid = GenerateTestPlanInputSchema.safeParse({
-      repository: 'owner/repo',
       maxTestCases: 15,
     });
     assert.equal(valid.success, true);
@@ -85,7 +71,6 @@ describe('input schemas', () => {
 
   it('GenerateTestPlanInputSchema rejects non-integer maxTestCases', () => {
     const result = GenerateTestPlanInputSchema.safeParse({
-      repository: 'owner/repo',
       maxTestCases: 5.5,
     });
     assert.equal(result.success, false);
@@ -128,7 +113,7 @@ describe('input schemas', () => {
   });
 
   it('GenerateReviewSummaryInputSchema matches AnalyzePrImpactInputSchema shape', () => {
-    const input = { repository: 'owner/repo', language: 'Rust' };
+    const input = { language: 'Rust' };
     assert.equal(
       GenerateReviewSummaryInputSchema.safeParse(input).success,
       true

@@ -1,6 +1,7 @@
 import type {
   CreateTaskRequestHandlerExtra,
   TaskRequestHandlerExtra,
+  TaskStore,
 } from '@modelcontextprotocol/sdk/experimental/tasks/interfaces.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ZodRawShapeCompat } from '@modelcontextprotocol/sdk/server/zod-compat.js';
@@ -9,6 +10,7 @@ import type {
   CallToolResult,
   LoggingLevel,
 } from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 import { createToolOutputSchema } from '../schemas/outputs.js';
@@ -476,6 +478,21 @@ function toLoggingLevel(level: string): LoggingLevel {
   }
 }
 
+function toMcpError(error: unknown, message: string): McpError {
+  if (error instanceof McpError) {
+    return error;
+  }
+
+  return new McpError(ErrorCode.InternalError, message);
+}
+
+function shouldUseProtocolErrorChannel(
+  error: unknown,
+  errorMeta: { kind?: string }
+): boolean {
+  return error instanceof McpError || errorMeta.kind === 'internal';
+}
+
 function asObjectRecord(value: unknown): Record<string, unknown> {
   if (typeof value === 'object' && value !== null) {
     return value as Record<string, unknown>;
@@ -838,10 +855,19 @@ class ToolExecutionRunner<
   private async handleRunFailure(error: unknown): Promise<CallToolResult> {
     const errorMessage = getErrorMessage(error);
     const errorMeta = classifyErrorMeta(error, errorMessage);
+    if (shouldUseProtocolErrorChannel(error, errorMeta)) {
+      await this.reporter.updateStatus(
+        createFailureStatusMessage('failed', errorMessage)
+      );
+      await this.reporter.reportCompletion('failed');
+      throw toMcpError(error, errorMessage);
+    }
+
     const outcome = errorMeta.kind === 'cancelled' ? 'cancelled' : 'failed';
     await this.reporter.updateStatus(
       createFailureStatusMessage(outcome, errorMessage)
     );
+    await this.reporter.reportCompletion(outcome);
 
     const errorResponse = createErrorToolResponse(
       this.config.errorCode,
@@ -860,7 +886,6 @@ class ToolExecutionRunner<
         this.onLog
       );
     }
-    await this.reporter.reportCompletion(outcome);
     return errorResponse;
   }
 
@@ -897,12 +922,27 @@ interface ExtendedRequestTaskStore extends RequestTaskStore {
   ): Promise<void>;
 }
 
+interface ProtocolTaskErrorStore extends RequestTaskStore {
+  storeProtocolTaskError(taskId: string, error: McpError): Promise<void>;
+}
+
 /** Runtime check: SDK's InMemoryTaskStore exposes updateTaskStatus. */
 function hasTaskStatusUpdate(
   store: RequestTaskStore
 ): store is RequestTaskStore &
   Pick<ExtendedRequestTaskStore, 'updateTaskStatus'> {
   return 'updateTaskStatus' in store;
+}
+
+function hasProtocolTaskErrorStore(
+  store: object
+): store is Pick<ProtocolTaskErrorStore, 'storeProtocolTaskError'> {
+  return 'storeProtocolTaskError' in store;
+}
+
+function getServerTaskStore(server: McpServer): TaskStore | undefined {
+  const internalServer = server.server as unknown as { _taskStore?: TaskStore };
+  return internalServer._taskStore;
 }
 
 // Utility function to read a file as UTF-8 text with consistent error handling.
@@ -942,8 +982,10 @@ export function createGeminiLogger(
 function createTaskStatusReporter(
   taskId: string,
   extra: CreateTaskRequestHandlerExtra,
-  store: RequestTaskStore
+  store: RequestTaskStore,
+  serverTaskStore?: TaskStore
 ): TaskStatusReporter {
+  const customStore = serverTaskStore ?? store;
   return {
     updateStatus: (message) =>
       updateTaskStatusIfSupported(store, taskId, 'working', message),
@@ -951,7 +993,7 @@ function createTaskStatusReporter(
       await extra.taskStore.storeTaskResult(taskId, status, result);
     },
     storeCancelledResult: (result) =>
-      storeCancelledResultIfSupported(store, taskId, result),
+      storeCancelledResultIfSupported(customStore, taskId, result),
     reportCancellation: (message) =>
       updateTaskStatusIfSupported(store, taskId, 'cancelled', message),
   };
@@ -980,7 +1022,8 @@ interface BackgroundTaskExecutionContext {
 }
 
 async function createBackgroundTaskExecutionContext(
-  extra: BackgroundTaskFactoryExtra
+  extra: BackgroundTaskFactoryExtra,
+  serverTaskStore?: TaskStore
 ): Promise<BackgroundTaskExecutionContext> {
   const { signal: baseSignal, taskRequestedTtl, taskStore } = extra;
 
@@ -990,8 +1033,9 @@ async function createBackgroundTaskExecutionContext(
   });
 
   let signal: AbortSignal = baseSignal;
-  if (hasCancelledTaskResultStore(taskStore)) {
-    const taskSignal = taskStore.getTaskAbortSignal(task.taskId);
+  const abortStore = serverTaskStore ?? taskStore;
+  if (hasCancelledTaskResultStore(abortStore)) {
+    const taskSignal = abortStore.getTaskAbortSignal(task.taskId);
     signal = AbortSignal.any([baseSignal, taskSignal]);
   }
 
@@ -1025,7 +1069,7 @@ async function updateTaskStatusIfSupported(
 }
 
 async function storeCancelledResultIfSupported(
-  store: RequestTaskStore,
+  store: object,
   taskId: string,
   result: CallToolResult
 ): Promise<void> {
@@ -1053,6 +1097,7 @@ async function storeCancelledTaskState(
 
 async function storeBackgroundTaskFailure(
   store: RequestTaskStore,
+  serverTaskStore: TaskStore | undefined,
   taskId: string,
   errorCode: string,
   error: unknown,
@@ -1072,6 +1117,19 @@ async function storeBackgroundTaskFailure(
       return;
     }
 
+    const errorMeta = classifyErrorMeta(error, errorMessage);
+    if (shouldUseProtocolErrorChannel(error, errorMeta)) {
+      const customStore = serverTaskStore ?? store;
+      if (hasProtocolTaskErrorStore(customStore)) {
+        await customStore.storeProtocolTaskError(
+          taskId,
+          toMcpError(error, errorMessage)
+        );
+      }
+      await updateTaskStatusIfSupported(store, taskId, 'failed', errorMessage);
+      return;
+    }
+
     await updateTaskStatusIfSupported(store, taskId, 'failed', errorMessage);
   } catch {
     // Status update failed — nothing more we can do
@@ -1083,6 +1141,7 @@ function runBackgroundTask(
   config: {
     taskId: string;
     store: RequestTaskStore;
+    serverTaskStore?: TaskStore;
     errorCode: string;
     signal?: AbortSignal;
     onSuccess?: (result: CallToolResult) => Promise<void>;
@@ -1112,6 +1171,7 @@ function runBackgroundTask(
 
       await storeBackgroundTaskFailure(
         config.store,
+        config.serverTaskStore,
         config.taskId,
         config.errorCode,
         error,
@@ -1162,7 +1222,12 @@ function createStructuredTaskRunnerDependencies(
   return {
     onLog: createGeminiLogger(server),
     reportProgress: getOrCreateProgressReporter(toProgressExtra(extra)),
-    statusReporter: createTaskStatusReporter(taskId, extra, extra.taskStore),
+    statusReporter: createTaskStatusReporter(
+      taskId,
+      extra,
+      extra.taskStore,
+      getServerTaskStore(server)
+    ),
   };
 }
 
@@ -1184,6 +1249,7 @@ export function registerStructuredToolTask<
 
   const outputSchema = createToolOutputSchema(config.resultSchema);
   const taskQueryHandlers = createTaskQueryHandlers(config.errorCode);
+  const serverTaskStore = getServerTaskStore(server);
 
   server.experimental.tasks.registerToolTask(
     config.name,
@@ -1202,8 +1268,10 @@ export function registerStructuredToolTask<
         input: unknown,
         extra: CreateTaskRequestHandlerExtra
       ) => {
-        const { task, signal } =
-          await createBackgroundTaskExecutionContext(extra);
+        const { task, signal } = await createBackgroundTaskExecutionContext(
+          extra,
+          serverTaskStore
+        );
 
         const runner = new ToolExecutionRunner(
           config,
@@ -1216,6 +1284,7 @@ export function registerStructuredToolTask<
           store: extra.taskStore,
           errorCode: config.errorCode,
           signal,
+          ...(serverTaskStore ? { serverTaskStore } : {}),
         });
 
         return createImmediateTaskResponse(config.title, task);
@@ -1253,7 +1322,8 @@ function runTaskBackedToolInBackground<TInput>(
   config: TaskBackedToolConfig<TInput>,
   input: TInput,
   taskId: string,
-  extra: CreateTaskRequestHandlerExtra
+  extra: CreateTaskRequestHandlerExtra,
+  serverTaskStore?: TaskStore
 ): void {
   runBackgroundTask(
     async () =>
@@ -1263,6 +1333,7 @@ function runTaskBackedToolInBackground<TInput>(
       store: extra.taskStore,
       errorCode: config.errorCode,
       signal: extra.signal,
+      ...(serverTaskStore ? { serverTaskStore } : {}),
       onSuccess: async (result) => {
         try {
           await extra.taskStore.storeTaskResult(
@@ -1282,6 +1353,10 @@ function runTaskBackedToolInBackground<TInput>(
         const errorMessage = getErrorMessage(error);
         const errorMeta = classifyErrorMeta(error, errorMessage);
         if (errorMeta.kind === 'cancelled') {
+          return;
+        }
+
+        if (shouldUseProtocolErrorChannel(error, errorMeta)) {
           return;
         }
 
@@ -1310,6 +1385,7 @@ export function registerTaskBackedTool<
   config: TaskBackedToolConfig<TInput, TOutputSchema>
 ): void {
   const taskQueryHandlers = createTaskQueryHandlers(config.errorCode);
+  const serverTaskStore = getServerTaskStore(server);
 
   server.experimental.tasks.registerToolTask(
     config.name,
@@ -1330,13 +1406,21 @@ export function registerTaskBackedTool<
         input: unknown,
         extra: CreateTaskRequestHandlerExtra
       ) => {
-        const { task, signal } =
-          await createBackgroundTaskExecutionContext(extra);
+        const { task, signal } = await createBackgroundTaskExecutionContext(
+          extra,
+          serverTaskStore
+        );
 
-        runTaskBackedToolInBackground(config, input as TInput, task.taskId, {
-          ...extra,
-          signal,
-        });
+        runTaskBackedToolInBackground(
+          config,
+          input as TInput,
+          task.taskId,
+          {
+            ...extra,
+            signal,
+          },
+          serverTaskStore
+        );
 
         return createImmediateTaskResponse(config.title, task);
       },
@@ -1351,6 +1435,7 @@ export interface DiffContextSnapshot {
   diff: string;
   parsedFiles: readonly ParsedFile[];
   stats: Readonly<DiffStats>;
+  repository: string;
 }
 
 export function getDiffContextSnapshot(
@@ -1362,6 +1447,7 @@ export function getDiffContextSnapshot(
       diff: '',
       parsedFiles: EMPTY_PARSED_FILES,
       stats: EMPTY_DIFF_STATS,
+      repository: '',
     };
   }
 
@@ -1369,6 +1455,7 @@ export function getDiffContextSnapshot(
     diff: slot.diff,
     parsedFiles: slot.parsedFiles,
     stats: slot.stats,
+    repository: slot.repository,
   };
 }
 

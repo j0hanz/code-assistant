@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { promisify } from 'node:util';
 
@@ -129,20 +130,64 @@ function formatGitFailureMessage(
   return `Failed to run git: ${err.message}. Ensure git is installed and the working directory is a git repository.`;
 }
 
+const HTTPS_REMOTE_PATTERN = /github\.com[/:]([^/]+)\/([^/.]+?)(?:\.git)?$/;
+
+function parseRepositoryFromRemoteUrl(remoteUrl: string): string {
+  const match = HTTPS_REMOTE_PATTERN.exec(remoteUrl.trim());
+  if (match?.[1] && match[2]) {
+    return `${match[1]}/${match[2]}`;
+  }
+  return '';
+}
+
+function repositoryFromDirName(gitRoot: string): string {
+  return path.basename(gitRoot);
+}
+
+async function inferRepository(
+  gitRoot: string,
+  signal?: AbortSignal
+): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      ['remote', 'get-url', 'origin'],
+      {
+        cwd: gitRoot,
+        encoding: 'utf8',
+        timeout: GIT_TIMEOUT_MS,
+        ...(signal ? { signal } : {}),
+      }
+    );
+    const parsed = parseRepositoryFromRemoteUrl(stdout);
+    if (parsed) return parsed;
+  } catch {
+    // No remote configured — fall through to directory name.
+  }
+  return repositoryFromDirName(gitRoot);
+}
+
+interface GitDiffResult {
+  diff: string;
+  repository: string;
+}
+
 async function runGitDiff(
   mode: DiffMode,
   signal?: AbortSignal
-): Promise<string> {
+): Promise<GitDiffResult> {
   const gitRoot = await findGitRoot(process.cwd(), signal);
-  const args = buildGitArgs(mode);
-  const { stdout } = await execFileAsync('git', args, {
-    cwd: gitRoot,
-    encoding: 'utf8',
-    maxBuffer: GIT_MAX_BUFFER,
-    timeout: GIT_TIMEOUT_MS,
-    ...(signal ? { signal } : {}),
-  });
-  return cleanDiff(stdout);
+  const [diffOutput, repository] = await Promise.all([
+    execFileAsync('git', buildGitArgs(mode), {
+      cwd: gitRoot,
+      encoding: 'utf8',
+      maxBuffer: GIT_MAX_BUFFER,
+      timeout: GIT_TIMEOUT_MS,
+      ...(signal ? { signal } : {}),
+    }),
+    inferRepository(gitRoot, signal),
+  ]);
+  return { diff: cleanDiff(diffOutput.stdout), repository };
 }
 
 function buildGitErrorResponse(
@@ -166,11 +211,11 @@ async function generateDiffToolResponse(
 > {
   const perfStart = performance.now();
   try {
-    const diff = await runGitDiff(mode, signal);
+    const { diff, repository } = await runGitDiff(mode, signal);
     if (isEmptyDiff(diff)) {
       return createNoChangesResponse(mode);
     }
-    return createSuccessResponse(diff, mode, perfStart);
+    return createSuccessResponse(diff, mode, repository, perfStart);
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error;
@@ -193,6 +238,7 @@ function createNoChangesResponse(
 function createSuccessResponse(
   diff: string,
   mode: DiffMode,
+  repository: string,
   perfStart: number
 ):
   | ReturnType<typeof createToolResponse>
@@ -216,6 +262,7 @@ function createSuccessResponse(
     generatedAt,
     generatedAtMs,
     mode,
+    repository,
   });
 
   const elapsedMs = Math.round(performance.now() - perfStart);
@@ -229,6 +276,7 @@ function createSuccessResponse(
         stats,
         generatedAt,
         mode,
+        repository,
         message: summary,
         elapsedMs,
       },

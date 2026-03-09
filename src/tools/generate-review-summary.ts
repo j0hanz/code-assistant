@@ -93,13 +93,13 @@ export function registerGenerateReviewSummaryTool(server: McpServer): void {
       return lines.join('\n');
     },
     buildPrompt: (input: GenerateReviewSummaryInput, ctx) => {
-      const { diff, stats } = getDiffContextSnapshot(ctx);
+      const { diff, stats, repository } = getDiffContextSnapshot(ctx);
       const languageSegment = formatLanguageSegment(input.language);
 
       return {
         systemInstruction: SYSTEM_INSTRUCTION,
         prompt: `
-Repository: ${input.repository}${languageSegment}
+Repository: ${repository}${languageSegment}
 Stats: ${stats.files} files, +${stats.added}, -${stats.deleted}
 
 <diff>

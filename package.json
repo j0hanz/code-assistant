@@ -56,7 +56,7 @@
     "lint:tests": "eslint src/__tests__",
     "lint:fix": "eslint . --fix",
     "test": "node scripts/tasks.mjs test",
-    "test:fast": "node --test --import tsx/esm src/__tests__/**/*.test.ts node-tests/**/*.test.ts",
+    "test:fast": "node --test --import tsx/esm tests/**/*.test.ts",
     "test:coverage": "node scripts/tasks.mjs test --coverage",
     "knip": "knip",
     "knip:fix": "knip --fix",

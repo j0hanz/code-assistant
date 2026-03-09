@@ -9,31 +9,21 @@ import {
 const LANGUAGE_DESCRIPTION =
   'Primary language (e.g. TypeScript, Python, JavaScript, Go, Rust, Java). Auto-infer from files.';
 
-const REPOSITORY_DESCRIPTION = 'Repo ID (owner/repo). Auto-infer from git/dir.';
-
 function createLanguageSchema(): z.ZodOptional<z.ZodString> {
   return createOptionalBoundedString(2, 32, LANGUAGE_DESCRIPTION);
 }
 
-function createRepositorySchema(): z.ZodString {
-  return createBoundedString(1, 200, REPOSITORY_DESCRIPTION);
-}
-
-const RepositorySchema = createRepositorySchema();
 const LanguageSchema = createLanguageSchema();
 
 export const AnalyzePrImpactInputSchema = z.strictObject({
-  repository: RepositorySchema,
   language: LanguageSchema,
 });
 
 export const GenerateReviewSummaryInputSchema = z.strictObject({
-  repository: RepositorySchema,
   language: LanguageSchema,
 });
 
 export const GenerateTestPlanInputSchema = z.strictObject({
-  repository: RepositorySchema,
   language: LanguageSchema,
   testFramework: createOptionalBoundedString(
     1,

@@ -6,6 +6,8 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   CallToolResultSchema,
+  ErrorCode,
+  McpError,
   RELATED_TASK_META_KEY,
   TaskStatusNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -35,6 +37,8 @@ const STRUCTURED_TOOL_RESULT = z.object({
   done: z.literal(true),
   label: z.string().min(1),
 });
+
+const EMPTY_INPUT = z.object({});
 
 async function createTaskTestServer(): Promise<{
   server: McpServer;
@@ -120,6 +124,24 @@ async function createTaskTestServer(): Promise<{
     buildPrompt: () => ({
       systemInstruction: 'Return structured test data.',
       prompt: 'Emit a fixed success result.',
+    }),
+  });
+
+  registerStructuredToolTask(server, {
+    name: 'structured_internal_error',
+    title: 'Structured Internal Error',
+    description: 'Structured task that fails through the protocol error path.',
+    inputSchema: EMPTY_INPUT,
+    fullInputSchema: EMPTY_INPUT,
+    resultSchema: STRUCTURED_TOOL_RESULT,
+    errorCode: 'E_STRUCTURED_INTERNAL',
+    taskSupport: 'required',
+    customGenerate: async () => {
+      throw new McpError(ErrorCode.InternalError, 'Synthetic internal failure');
+    },
+    buildPrompt: () => ({
+      systemInstruction: 'Unused.',
+      prompt: 'Unused.',
     }),
   });
 
@@ -301,6 +323,45 @@ describe('task execution lifecycle', () => {
     await stream.return(undefined);
   });
 
+  it('preserves protocol errors for structured task failures', async () => {
+    const handle = await createTaskTestServer();
+    close = handle.close;
+
+    const stream = handle.client.experimental.tasks.callToolStream(
+      {
+        name: 'structured_internal_error',
+        arguments: {},
+      },
+      CallToolResultSchema,
+      { task: { ttl: 10_000 } }
+    );
+
+    const firstMessage = await stream.next();
+    assert.equal(firstMessage.done, false);
+
+    const created = firstMessage.value as {
+      type: string;
+      task: { taskId: string };
+    };
+    assert.equal(created.type, 'taskCreated');
+
+    await assert.rejects(
+      async () =>
+        await handle.client.experimental.tasks.getTaskResult(
+          created.task.taskId,
+          CallToolResultSchema
+        ),
+      /Synthetic internal failure/
+    );
+
+    const task = await handle.client.experimental.tasks.getTask(
+      created.task.taskId
+    );
+    assert.equal(task.status, 'failed');
+
+    await stream.return(undefined);
+  });
+
   it('tasks/result includes related-task metadata injected by SDK', async () => {
     const handle = await createTaskTestServer();
     close = handle.close;
@@ -390,5 +451,65 @@ describe('task execution lifecycle', () => {
       (u) => u.status === 'completed' || u.status === 'failed'
     );
     assert.ok(terminalUpdate, 'should include a terminal status notification');
+  });
+
+  it('stops progress notifications once a task is cancelled', async () => {
+    const handle = await createTaskTestServer();
+    close = handle.close;
+
+    const events: string[] = [];
+
+    const stream = handle.client.experimental.tasks.callToolStream(
+      {
+        name: 'slow_tool',
+        arguments: { waitMs: 1_000 },
+      },
+      CallToolResultSchema,
+      {
+        task: { ttl: 10_000 },
+        onprogress: (progress) => {
+          events.push(
+            `progress:${String(progress.message ?? progress.progress)}`
+          );
+        },
+      }
+    );
+
+    const firstMessage = await stream.next();
+    assert.equal(firstMessage.done, false);
+
+    const created = firstMessage.value as {
+      type: string;
+      task: { taskId: string };
+    };
+    assert.equal(created.type, 'taskCreated');
+
+    await handle.client.experimental.tasks.cancelTask(created.task.taskId);
+
+    for await (const message of stream) {
+      const msg = message as { type: string };
+      if (msg.type === 'taskStatus') {
+        const taskStatusMessage = message as {
+          type: 'taskStatus';
+          task: { status: string };
+        };
+        events.push(`status:${taskStatusMessage.task.status}`);
+      }
+      if (msg.type === 'result' || msg.type === 'error') {
+        break;
+      }
+    }
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 200));
+
+    const terminalStatusIndex = events.findIndex(
+      (event) => event === 'status:cancelled'
+    );
+    assert.ok(terminalStatusIndex >= 0, 'should emit a cancelled status');
+
+    const progressAfterTerminal = events
+      .slice(terminalStatusIndex + 1)
+      .some((event) => event.startsWith('progress:'));
+    assert.equal(progressAfterTerminal, false);
   });
 });

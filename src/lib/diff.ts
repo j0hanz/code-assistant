@@ -376,6 +376,8 @@ export interface DiffSlot {
   /** Numeric epoch ms cached at creation to avoid repeated Date parsing. */
   generatedAtMs: number;
   mode: string;
+  /** Auto-inferred repository identifier (owner/repo) from git remote. */
+  repository: string;
 }
 
 export function computeDiffHash(diff: string): string {
@@ -409,10 +411,18 @@ export function initDiffStore(server: McpServer): void {
   cleanupTimer = startCleanupTimer(() => {
     const ttl = diffCacheTtlMs.get();
     const now = Date.now();
+    let didExpireCurrentDiff = false;
     for (const [key, slot] of diffSlots) {
       if (now - slot.generatedAtMs > ttl) {
         diffSlots.delete(key);
+        if (key === process.cwd()) {
+          didExpireCurrentDiff = true;
+        }
       }
+    }
+
+    if (didExpireCurrentDiff) {
+      notifyDiffUpdated();
     }
   });
 }
